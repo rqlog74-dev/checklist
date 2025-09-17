@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rio Quality - Checklist de Retorno</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Biblioteca para gerar arquivos Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- SDKs do Firebase v8 (compatível com o código) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .status-aguardando-conferencia { background-color: #FEF9C3; color: #CA8A04; }
+        .status-aguardando-admin { background-color: #DBEAFE; color: #1e86af; }
+        .status-concluido { background-color: #D1FAE5; color: #065F46; }
+        .view { display: none; }
+        .view.active { display: block; }
+        .modal-backdrop { transition: opacity 0.3s ease; }
+        .modal-content { transition: all 0.3s ease; }
+        #loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* Estilos para o Autocomplete */
+        .autocomplete-suggestions {
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            max-height: 150px;
+            overflow-y: auto;
+            position: absolute;
+            background-color: white;
+            width: 100%;
+            z-index: 10;
+        }
+        .autocomplete-suggestion {
+            padding: 8px 12px;
+            cursor: pointer;
+        }
+        .autocomplete-suggestion:hover, .autocomplete-suggestion.active {
+            background-color: #f7fafc;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="app-container" class="hidden">
+        <!-- Cabeçalho Fixo -->
+        <header class="bg-white shadow-md p-4 flex justify-between items-center z-20 sticky top-0">
+            <div class="flex items-center space-x-4">
+                <img src="https://www.rioquality.com.br/images/logo.webp" alt="Logotipo da Empresa" class="h-8 w-auto">
+                <h1 id="header-title" class="text-xl font-bold text-gray-800">Painel checklist de retorno</h1>
+            </div>
+            <div id="header-user" class="flex items-center space-x-3">
+                 <div class="text-right">
+                    <p id="current-user-name" class="font-semibold text-sm text-gray-700"></p>
+                    <p id="current-user-role" class="text-xs text-gray-500"></p>
+                 </div>
+                 <button onclick="logout()" title="Sair" class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold text-lg hover:bg-gray-300 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                 </button>
+            </div>
+        </header>
+
+        <!-- DASHBOARD -->
+        <div id="view-dashboard" class="view active">
+            <main class="p-6">
+                <div class="bg-white p-6 rounded-xl shadow-lg h-full flex flex-col">
+                    <div class="flex flex-wrap justify-between items-center mb-4 gap-4">
+                        <h2 class="text-lg font-bold text-gray-800">Checklists Recentes</h2>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="exportarExcel()" class="bg-green-600 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-green-700 transition shadow flex items-center space-x-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                <span>Exportar Excel</span>
+                            </button>
+                            <button id="btn-novo-checklist" onclick="iniciarNovoChecklist()" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition shadow disabled:bg-gray-400 disabled:cursor-not-allowed">
+                                + Novo Checklist
+                            </button>
+                        </div>
+                    </div>
+                     <div class="flex justify-end space-x-2 mb-4">
+                        <input type="text" id="filtro-busca" placeholder="Buscar por Carga..." class="w-full md:w-1/2 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        <select id="filtro-status" class="border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                            <option value="">Todos os Status</option>
+                            <option value="Aguardando Conferência">Aguardando Conferência</option>
+                            <option value="Aguardando Admin">Aguardando Admin</option>
+                            <option value="Concluído">Concluído</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 overflow-x-auto">
+                        <table class="w-full text-sm text-left text-gray-600">
+                            <thead class="text-xs text-gray-700 uppercase bg-gray-100">
+                                <tr>
+                                    <th scope="col" class="py-3 px-4">Data</th>
+                                    <th scope="col" class="py-3 px-4">Carga</th>
+                                    <th scope="col" class="py-3 px-4">Status</th>
+                                    <th scope="col" class="py-3 px-4 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-checklists"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- FORMULÁRIO -->
+        <div id="view-form" class="view">
+            <main class="p-6">
+                <div id="form-container" class="bg-white p-6 rounded-xl shadow-lg max-w-2xl mx-auto">
+                    <!-- O conteúdo do formulário será injetado aqui pelo JS -->
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL DE VISUALIZAÇÃO -->
+    <div id="view-modal-container">
+        <!-- O conteúdo do modal será injetado aqui pelo JS -->
+    </div>
+
+    <!-- TELA DE LOGIN REAL -->
+    <div id="login-view" class="fixed inset-0 bg-gray-100 flex items-center justify-center z-50">
+        <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-sm">
+            <div class="text-center mb-6">
+                 <img src="https://www.rioquality.com.br/images/logo.webp" alt="Logotipo da Empresa" class="h-12 w-auto mx-auto">
+                <h2 class="text-2xl font-bold text-gray-800 mt-2">Checklist de Retorno - TRANSPORTE</h2>
+                <p class="text-gray-600">Por favor, faça login para continuar.</p>
+            </div>
+            <form id="login-form" class="space-y-4">
+                <div>
+                    <label for="email" class="text-sm font-medium text-gray-700">Email</label>
+                    <input type="email" id="email" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                <div>
+                    <label for="password" class="text-sm font-medium text-gray-700">Senha</label>
+                    <input type="password" id="password" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                </div>
+                 <p id="login-error" class="text-sm text-red-600 h-4"></p>
+                <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow flex items-center justify-center">
+                    <span id="login-button-text">Entrar</span>
+                    <div id="loader" class="hidden"></div>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    // ===============================================================
+    //               INICIALIZAÇÃO E CONFIGURAÇÃO DO FIREBASE
+    // ===============================================================
+    const firebaseConfig = {
+        apiKey: "AIzaSyC7Wx_vjoeu_AM9XutwCenbnsBfkRnPDOs",
+        authDomain: "checklist-logistica-app.firebaseapp.com",
+        projectId: "checklist-logistica-app",
+        storageBucket: "checklist-logistica-app.appspot.com",
+        messagingSenderId: "1016366468474",
+        appId: "1:1016366468474:web:ae176857dd3d884027dac3"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+    const checklistsCollection = db.collection("checklists");
+    const usersCollection = db.collection("users");
+    const veiculosCollection = db.collection("veiculos");
+
+    // ===============================================================
+    //                      ESTADO GLOBAL DO APP
+    // ===============================================================
+    let currentUser = null; 
+    let checklists = [];
+    let veiculosList = [];
+    let currentEditingId = null;
+    let unsubscribe = null; 
+
+    // ===============================================================
+    //                  LÓGICA DE AUTENTICAÇÃO E DADOS INICIAIS
+    // ===============================================================
+    const loginForm = document.getElementById('login-form');
+    const loginError = document.getElementById('login-error');
+    const loginButtonText = document.getElementById('login-button-text');
+    const loader = document.getElementById('loader');
+
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        loginError.textContent = '';
+        loginButtonText.classList.add('hidden');
+        loader.classList.remove('hidden');
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        auth.signInWithEmailAndPassword(email, password)
+            .catch((error) => {
+                loginError.textContent = 'Email ou senha inválidos.';
+                loginButtonText.classList.remove('hidden');
+                loader.classList.add('hidden');
+            });
+    });
+    
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            Promise.all([
+                usersCollection.doc(user.uid).get(),
+                veiculosCollection.get()
+            ]).then(([userDoc, veiculosSnapshot]) => {
+                if (userDoc.exists) {
+                    currentUser = { uid: user.uid, email: user.email, role: userDoc.data().role, name: userDoc.data().name };
+                    veiculosList = veiculosSnapshot.docs.map(doc => doc.data().nome);
+
+                    document.getElementById('login-view').style.display = 'none';
+                    document.getElementById('app-container').classList.remove('hidden');
+                    document.getElementById('current-user-name').textContent = currentUser.name;
+                    document.getElementById('current-user-role').textContent = currentUser.role;
+                    updatePermissions();
+                    listenForChecklists();
+                } else {
+                    loginError.textContent = 'Perfil de usuário não configurado.';
+                    logout();
+                }
+            }).catch(error => {
+                console.error("Erro no Promise.all:", error);
+                loginError.textContent = 'Erro ao carregar dados iniciais.';
+                logout();
+            });
+        } else {
+            currentUser = null;
+            document.getElementById('login-view').style.display = 'flex';
+            document.getElementById('app-container').classList.add('hidden');
+            loginButtonText.classList.remove('hidden');
+            loader.classList.add('hidden');
+            if (unsubscribe) unsubscribe();
+        }
+    });
+
+    function logout() { auth.signOut(); }
+
+    function listenForChecklists() {
+        if (unsubscribe) unsubscribe();
+        unsubscribe = checklistsCollection.orderBy("createdAt", "desc").onSnapshot(snapshot => {
+            checklists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            aplicarFiltros();
+        }, error => console.error("Erro ao buscar checklists: ", error));
+    }
+    </script>
+
+    <script>
+    // ===============================================================
+    //          LÓGICA DE RENDERIZAÇÃO, FORMULÁRIOS E AÇÕES
+    // ===============================================================
+    
+    // --- NAVEGAÇÃO E CONTROLES DE UI ---
+    const statusClasses = { 'Aguardando Conferência': 'status-aguardando-conferencia', 'Aguardando Admin': 'status-aguardando-admin', 'Concluído': 'status-concluido' };
+    function navigateTo(viewId) { 
+        document.querySelectorAll('.view').forEach(v => v.classList.remove('active')); 
+        document.getElementById(viewId).classList.add('active'); 
+        const title = viewId === 'view-dashboard' ? 'Painel de Checklists' : 'Formulário de Checklist'; 
+        document.getElementById('header-title').textContent = title; 
+        window.scrollTo(0, 0); 
+    }
+    function fecharModal() { document.getElementById('view-modal-container').innerHTML = ''; }
+    
+    function toggleDivergencia(show) { 
+        const detailsDiv = document.getElementById('divergencia-details'); 
+        if (show) { 
+            detailsDiv.classList.remove('hidden'); 
+        } else { 
+            detailsDiv.classList.add('hidden'); 
+        } 
+    }
+
+    function renderizarTabela(dados) {
+        const tabelaBody = document.getElementById('tabela-checklists');
+        tabelaBody.innerHTML = '';
+        if(dados.length === 0){ tabelaBody.innerHTML = `<tr><td colspan="4" class="text-center py-10 text-gray-500">Nenhum checklist encontrado.</td></tr>`; return; }
+        
+        dados.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.className = 'bg-white border-b hover:bg-gray-50';
+            const statusClass = statusClasses[item.status] || '';
+            
+            let actionButton = '';
+            const canConferir = currentUser && currentUser.role === 'Conferente';
+            const canFinalizar = currentUser && currentUser.role === 'Admin';
+
+            if (item.status === 'Aguardando Conferência' && canConferir) { actionButton = `<button onclick="iniciarEtapa(2, '${item.id}')" class="bg-yellow-400 text-yellow-800 px-3 py-1 rounded-full font-semibold text-xs hover:bg-yellow-500">Conferir</button>`; } 
+            else if (item.status === 'Aguardando Admin' && canFinalizar) { actionButton = `<button onclick="iniciarEtapa(3, '${item.id}')" class="bg-blue-400 text-blue-800 px-3 py-1 rounded-full font-semibold text-xs hover:bg-blue-500">Finalizar</button>`; }
+
+            const visualizarButton = `<button onclick="abrirModal('${item.id}')" class="font-medium text-gray-600 hover:underline text-xs ${actionButton ? 'ml-3' : ''}">Visualizar</button>`;
+            const dataFormatada = item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Data Inválida';
+
+            tr.innerHTML = `
+                <td class="py-3 px-4">${dataFormatada}</td>
+                <td class="py-3 px-4 font-medium text-gray-900">${item.secao1.carga}</td>
+                <td class="py-3 px-4"><span class="px-2 py-1 font-semibold text-xs rounded-full ${statusClass}">${item.status.toUpperCase()}</span></td>
+                <td class="py-3 px-4 text-center"><div class="flex items-center justify-center">${actionButton}${visualizarButton}</div></td>
+            `;
+            tabelaBody.appendChild(tr);
+        });
+    }
+
+    function updatePermissions() {
+        const btnNovo = document.getElementById('btn-novo-checklist');
+        if (currentUser && currentUser.role === 'Transporte') {
+            btnNovo.disabled = false;
+            btnNovo.title = '';
+        } else {
+            btnNovo.disabled = true;
+            btnNovo.title = 'Apenas usuários de Transporte podem criar checklists.';
+        }
+        aplicarFiltros();
+    }
+
+    // --- LÓGICA DO AUTOCOMPLETE ---
+    function setupAutocomplete() {
+        const input = document.getElementById('s1-veiculo');
+        const suggestionsContainer = document.getElementById('s1-veiculo-suggestions');
+        input.addEventListener('input', () => {
+            const value = input.value.toLowerCase();
+            suggestionsContainer.innerHTML = '';
+            if (value.length === 0) { suggestionsContainer.classList.add('hidden'); return; }
+            const filteredVeiculos = veiculosList.filter(v => v.toLowerCase().includes(value));
+            if (filteredVeiculos.length > 0) {
+                suggestionsContainer.classList.remove('hidden');
+                filteredVeiculos.forEach(veiculo => {
+                    const div = document.createElement('div');
+                    div.className = 'autocomplete-suggestion';
+                    div.textContent = veiculo;
+                    div.addEventListener('click', () => { input.value = veiculo; suggestionsContainer.innerHTML = ''; suggestionsContainer.classList.add('hidden'); });
+                    suggestionsContainer.appendChild(div);
+                });
+            } else { suggestionsContainer.classList.add('hidden'); }
+        });
+        document.addEventListener('click', (event) => { if (suggestionsContainer && !input.contains(event.target)) { suggestionsContainer.classList.add('hidden'); } });
+    }
+
+    // --- LÓGICA DOS CAMPOS DINÂMICOS ---
+    function addDynamicInput(containerId) {
+        const container = document.getElementById(containerId);
+        const newInputGroup = document.createElement('div');
+        newInputGroup.className = 'flex items-center space-x-2 mt-2';
+        newInputGroup.innerHTML = `<input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="this.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>`;
+        container.appendChild(newInputGroup);
+    }
+    
+    function addDivergenciaInput(containerId) {
+        const container = document.getElementById(containerId);
+        const newRow = document.createElement('div');
+        newRow.className = 'grid grid-cols-1 md:grid-cols-4 gap-2 items-center mt-2';
+        newRow.innerHTML = `
+            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm col-span-2">
+            <div class="flex items-center space-x-2">
+                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
+            </div>
+        `;
+        container.appendChild(newRow);
+    }
+
+    // --- LÓGICA DOS FORMULÁRIOS (GERAÇÃO DINÂMICA) ---
+    function iniciarNovoChecklist() {
+        currentEditingId = null;
+        const formContainer = document.getElementById('form-container');
+        formContainer.innerHTML = `
+            <div class="flex justify-between items-start">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">Novo Checklist de Retorno</h2>
+                <button onclick="navigateTo('view-dashboard')" class="text-sm text-gray-600 hover:text-gray-900">&larr; Voltar ao Painel</button>
+            </div>
+            <form id="checklist-form">
+                <fieldset class="space-y-4">
+                    <h3 class="font-semibold text-gray-700 border-b pb-2">1 - Documentos</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div><label for="s1-data" class="text-sm font-medium text-gray-700">Data</label><input type="date" id="s1-data" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                        <div><label for="s1-numero_carga" class="text-sm font-medium text-gray-700">Número da Carga</label><input type="text" id="s1-numero_carga" placeholder="Insira o número" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                        <div class="sm:col-span-2 relative">
+                            <label for="s1-veiculo" class="text-sm font-medium text-gray-700">Veículo</label>
+                            <input type="text" id="s1-veiculo" placeholder="Digite para buscar..." required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" autocomplete="off">
+                            <div id="s1-veiculo-suggestions" class="autocomplete-suggestions hidden rounded-b-md shadow-lg"></div>
+                        </div>
+                    </div>
+                    <fieldset class="border-t pt-4"><legend class="text-sm font-medium text-gray-700 mb-2">Retorno de notas não conforme</legend>
+                        <div class="space-y-3">
+                            <div><label class="text-sm text-gray-600">Falta de N.F N°</label><div id="s1-falta_nf_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-falta_nf_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                            <div><label class="text-sm text-gray-600">Falta de Assinatura N.F N°</label><div id="s1-falta_assinatura_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-falta_assinatura_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                            <div><label class="text-sm text-gray-600">Foto Canhoto N.F N°</label><div id="s1-foto_canhoto_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-foto_canhoto_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                            <div><label class="text-sm text-gray-600">Dev. Falta N.F N°</label><div id="s1-dev_falta_nf_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-dev_falta_nf_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                            <div><label class="text-sm text-gray-600">Dev. Total N.F N°</label><div id="s1-dev_total_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-dev_total_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                            <div><label class="text-sm text-gray-600">Dev. Parcial N.F N°</label><div id="s1-dev_parcial_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-dev_parcial_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                        </div>
+                    </fieldset>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4"><div><label class="text-sm font-medium text-gray-700">Cartão de Combustível</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Não" class="mr-2 h-4 w-4"> Não</label><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Agregado" class="mr-2 h-4 w-4"> Agregado</label></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-sm font-medium text-gray-700">Celular</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-celular" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-celular" value="Não" class="mr-2 h-4 w-4"> Não</label><label class="flex items-center"><input type="radio" name="s1-celular" value="Agregado" class="mr-2 h-4 w-4"> Agregado</label></div></div><div><label class="text-sm font-medium text-gray-700">Carregador</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-carregador" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-carregador" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div></div></div>
+                    <button type="button" onclick="salvarEtapa1()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Conferência</button>
+                </fieldset>
+            </form>
+        `;
+        navigateTo('view-form');
+        setupAutocomplete();
+    }
+    
+    function iniciarEtapa(etapa, id) {
+        currentEditingId = id;
+        const item = checklists.find(c => c.id === id);
+        if (!item) return;
+
+        const formContainer = document.getElementById('form-container');
+        let summaryHTML = '';
+        let formHTML = '';
+
+        if (etapa >= 2) {
+            const ocorrencias = [
+                { label: 'Falta de NF', data: item.secao1.falta_nf },
+                { label: 'Falta de Assinatura', data: item.secao1.falta_assinatura },
+                { label: 'Foto Canhoto', data: item.secao1.foto_canhoto },
+                { label: 'Dev. Falta NF', data: item.secao1.dev_falta_nf },
+                { label: 'Dev. Total', data: item.secao1.dev_total },
+                { label: 'Dev. Parcial', data: item.secao1.dev_parcial }
+            ].filter(d => d.data && d.data.length > 0);
+
+            summaryHTML += `<div class="p-3 bg-gray-100 rounded-lg text-sm"><h4 class="font-bold mb-1">Resumo Etapa 1</h4><p><strong>Carga:</strong> ${item.secao1.carga} | <strong>Veículo:</strong> ${item.secao1.veiculo}</p>`;
+            if(ocorrencias.length > 0) {
+                summaryHTML += `<div class="mt-2 pt-2 border-t">`;
+                ocorrencias.forEach(oc => {
+                    summaryHTML += `<p><strong>${oc.label} (${oc.data.length} NFs):</strong> ${oc.data.join(', ')}</p>`;
+                });
+                summaryHTML += `</div>`;
+            }
+            summaryHTML += `</div>`;
+        }
+        if (etapa >= 3) {
+            const secao2 = item.secao2 || {};
+            summaryHTML += `<div class="p-3 bg-gray-100 rounded-lg text-sm mt-2"><h4 class="font-bold mb-1">Resumo Etapa 2</h4><p><strong>Conferido:</strong> ${secao2.produtos_conferidos || 'N/A'} | <strong>Divergente:</strong> ${secao2.carga_divergente || 'N/A'}</p>`;
+            if (secao2.carga_divergente === 'Sim') {
+                const divergencias = [
+                    {label: 'Dev. Total', data: secao2.divergencia_dev_total},
+                    {label: 'Dev. Parcial', data: secao2.divergencia_dev_parcial},
+                    {label: 'Falta', data: secao2.divergencia_falta},
+                ];
+                summaryHTML += `<div class="mt-2 pt-2 border-t">`;
+                divergencias.forEach(tipo => {
+                    if(tipo.data && tipo.data.length > 0) {
+                        summaryHTML += `<p><strong>Divergência ${tipo.label} (${tipo.data.length}):</strong></p>`;
+                        tipo.data.forEach(d => {
+                           summaryHTML += `<p class="pl-4">- NF: ${d.nf}, Prod: ${d.produto}, Qtd: ${d.qtd}</p>`;
+                        });
+                    }
+                });
+                summaryHTML += `</div>`;
+            }
+            summaryHTML += `</div>`;
+
+            summaryHTML += `
+                <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm mt-4">
+                    <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 1 - Documentos)</h4>
+                    <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Tratado" class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Em tratamento" class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
+                    <div class="mt-2"><label for="tratativa1_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa1_obs" placeholder="Descreva a resolução para os documentos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></textarea></div>
+                </div>`;
+            summaryHTML += `
+                <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm mt-2">
+                    <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 2 - Produtos)</h4>
+                    <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Tratado" class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Em tratamento" class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
+                    <div class="mt-2"><label for="tratativa2_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa2_obs" placeholder="Descreva a resolução para os produtos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></textarea></div>
+                </div>`;
+        }
+
+        if (etapa === 2) {
+            formHTML = `
+                <fieldset class="space-y-4">
+                     <h3 class="font-semibold text-gray-700 border-b pb-2">2° ATIVOS / PRODUTOS DIVERGENTE</h3>
+                     <div class="pt-2">
+                         <label class="text-sm font-medium text-gray-700">Ativos retornados (quantidade):</label>
+                         <div class="grid grid-cols-2 gap-x-4 gap-y-3 mt-2">
+                             <div><label for="s2-qtd_cacamba" class="text-xs text-gray-600">Caçamba</label><input type="number" id="s2-qtd_cacamba" value="${item.secao2.cacamba || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                             <div><label for="s2-qtd_gaiola" class="text-xs text-gray-600">Gaiola</label><input type="number" id="s2-qtd_gaiola" value="${item.secao2.gaiola || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                             <div><label for="s2-qtd_palete" class="text-xs text-gray-600">Palete</label><input type="number" id="s2-qtd_palete" value="${item.secao2.palete || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                             <div><label for="s2-qtd_chapatex" class="text-xs text-gray-600">Chapatex</label><input type="number" id="s2-qtd_chapatex" value="${item.secao2.chapatex || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                         </div>
+                     </div>
+                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
+                        <div><label class="text-sm font-medium text-gray-700">Produtos conferidos?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div>
+                        <div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" class="mr-2 h-4 w-4" onchange="toggleDivergencia(true)"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" class="mr-2 h-4 w-4" onchange="toggleDivergencia(false)" checked> Não</label></div></div>
+                     </div>
+                     <div id="divergencia-details" class="hidden space-y-4 border-t pt-4">
+                        <div id="divergencia-tipo-dev_total"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Total)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_total')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                        <div id="divergencia-tipo-dev_parcial"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Parcial)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_parcial')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                        <div id="divergencia-tipo-falta"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Falta)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-falta')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                     </div>
+                     <button type="button" onclick="salvarEtapa2()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Admin</button>
+                </fieldset>`;
+        } else if (etapa === 3) {
+            formHTML = `
+                <fieldset class="space-y-4">
+                    <h3 class="font-semibold text-gray-700 border-b pb-2">3 - Sala (Administrativa)</h3>
+                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <div><label for="s3-motorista" class="text-sm font-medium text-gray-700">Motorista</label><input type="text" id="s3-motorista" placeholder="Nome do motorista" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                        <div><label for="s3-ajudante1" class="text-sm font-medium text-gray-700">Ajudante 1</label><input type="text" id="s3-ajudante1" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                        <div class="sm:col-span-2"><label for="s3-ajudante2" class="text-sm font-medium text-gray-700">Ajudante 2 (Opcional)</label><input type="text" id="s3-ajudante2" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    </div>
+                    <div class="border-t pt-4 space-y-3">
+                        <div><label for="s3-obs_arrumacao" class="text-sm font-medium text-gray-700">Orientação quanto à arrumação do baú</label><input type="text" id="s3-obs_arrumacao" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                        <div><label for="s3-obs_fusion" class="text-sm font-medium text-gray-700">Validação da marcação no Fusion</label><input type="text" id="s3-obs_fusion" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                        <div><label for="s3-obs_ocorrencias" class="text-sm font-medium text-gray-700">Lançamento das ocorrências</label><input type="text" id="s3-obs_ocorrencias" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                        <div><label for="s3-obs_devolucao" class="text-sm font-medium text-gray-700">Geração das cargas de devolução</label><input type="text" id="s3-obs_devolucao" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                        <div><label for="s3-obs_feedback" class="text-sm font-medium text-gray-700">Feedback da rota</label><input type="text" id="s3-obs_feedback" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                        <div><label for="s3-obs_gerais" class="text-sm font-medium text-gray-700">Observações Gerais</label><textarea id="s3-obs_gerais" placeholder="Adicione aqui quaisquer observações gerais..." rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></textarea></div>
+                        <div><label for="s3-responsavel" class="text-sm font-medium text-gray-700">Responsável Conferência</label><input type="text" id="s3-responsavel" required placeholder="Nome completo do responsável" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    </div>
+                    <button type="button" onclick="salvarEtapa3()" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors shadow">Concluir Checklist</button>
+                </fieldset>`;
+        }
+
+        formContainer.innerHTML = `
+            <div class="flex justify-between items-start">
+                <h2 class="text-lg font-bold text-gray-800 mb-4">Continuar Checklist - Carga ${item.secao1.carga}</h2>
+                <button onclick="navigateTo('view-dashboard')" class="text-sm text-gray-600 hover:text-gray-900">&larr; Voltar ao Painel</button>
+            </div>
+            <div class="mb-4 space-y-2">${summaryHTML}</div>
+            <form id="checklist-form">${formHTML}</form>`;
+        
+        navigateTo('view-form');
+    }
+    
+    // --- LÓGICA DE SALVAR/ATUALIZAR DADOS ---
+    function getDynamicInputValues(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return [];
+        return Array.from(container.querySelectorAll('input[type="text"]')).map(input => input.value).filter(value => value.trim() !== '');
+    }
+
+    function getDivergenciaInputValues(containerId) {
+        const container = document.getElementById(containerId);
+        if(!container) return [];
+        return Array.from(container.children).filter(el => el.tagName === 'DIV').map(row => {
+            const nf = row.querySelector('.nf')?.value || '';
+            const produto = row.querySelector('.produto')?.value || '';
+            const qtd = row.querySelector('.qtd')?.value || '';
+            if(nf || produto || qtd) {
+                return { nf, produto, qtd };
+            }
+            return null;
+        }).filter(item => item !== null);
+    }
+
+    function salvarEtapa1() {
+        const cargaInput = document.getElementById('s1-numero_carga');
+        if(!cargaInput || !cargaInput.value) { alert('Número da carga é obrigatório.'); return; }
+
+        const novoChecklist = {
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            status: 'Aguardando Conferência',
+            criadoPor: currentUser.name,
+            conferidoPor: null,
+            finalizadoPor: null,
+            secao1: {
+                carga: document.getElementById('s1-numero_carga').value,
+                veiculo: document.getElementById('s1-veiculo').value,
+                data: document.getElementById('s1-data').value,
+                falta_nf: getDynamicInputValues('s1-falta_nf_container'),
+                falta_assinatura: getDynamicInputValues('s1-falta_assinatura_container'),
+                foto_canhoto: getDynamicInputValues('s1-foto_canhoto_container'),
+                dev_falta_nf: getDynamicInputValues('s1-dev_falta_nf_container'),
+                dev_total: getDynamicInputValues('s1-dev_total_container'),
+                dev_parcial: getDynamicInputValues('s1-dev_parcial_container'),
+                cartao_combustivel: document.querySelector('input[name="s1-cartao_combustivel"]:checked')?.value || '',
+                celular: document.querySelector('input[name="s1-celular"]:checked')?.value || '',
+                carregador: document.querySelector('input[name="s1-carregador"]:checked')?.value || '',
+            },
+            secao2: {},
+            secao3: {}
+        };
+
+        checklistsCollection.add(novoChecklist)
+            .then(() => navigateTo('view-dashboard'))
+            .catch(error => console.error("Erro ao adicionar: ", error));
+    }
+
+    function salvarEtapa2() {
+        if (!currentEditingId) return;
+        
+        const dataToUpdate = {
+            status: 'Aguardando Admin',
+            conferidoPor: currentUser.name,
+            secao2: {
+                cacamba: document.getElementById('s2-qtd_cacamba').value,
+                gaiola: document.getElementById('s2-qtd_gaiola').value,
+                palete: document.getElementById('s2-qtd_palete').value,
+                chapatex: document.getElementById('s2-qtd_chapatex').value,
+                produtos_conferidos: document.querySelector('input[name="s2-produtos_conferidos"]:checked')?.value || '',
+                carga_divergente: document.querySelector('input[name="s2-carga_divergente"]:checked')?.value || '',
+                divergencia_dev_total: getDivergenciaInputValues('divergencia-tipo-dev_total'),
+                divergencia_dev_parcial: getDivergenciaInputValues('divergencia-tipo-dev_parcial'),
+                divergencia_falta: getDivergenciaInputValues('divergencia-tipo-falta'),
+            }
+        };
+        checklistsCollection.doc(currentEditingId).set(dataToUpdate, { merge: true })
+            .then(() => navigateTo('view-dashboard'))
+            .catch(error => console.error("Erro ao atualizar: ", error));
+    }
+
+    function salvarEtapa3() {
+        if (!currentEditingId) return;
+        if(!document.getElementById('s3-responsavel').value) { alert('Responsável é obrigatório.'); return; }
+        const dataToUpdate = {
+            status: 'Concluído',
+            finalizadoPor: currentUser.name,
+            secao3: {
+                motorista: document.getElementById('s3-motorista').value,
+                ajudante1: document.getElementById('s3-ajudante1').value,
+                ajudante2: document.getElementById('s3-ajudante2').value,
+                tratativa1_status: document.querySelector('input[name="tratativa1_status"]:checked')?.value || '',
+                tratativa1_obs: document.getElementById('tratativa1_obs').value,
+                tratativa2_status: document.querySelector('input[name="tratativa2_status"]:checked')?.value || '',
+                tratativa2_obs: document.getElementById('tratativa2_obs').value,
+                obs_arrumacao: document.getElementById('s3-obs_arrumacao').value,
+                obs_fusion: document.getElementById('s3-obs_fusion').value,
+                obs_ocorrencias: document.getElementById('s3-obs_ocorrencias').value,
+                obs_devolucao: document.getElementById('s3-obs_devolucao').value,
+                obs_feedback: document.getElementById('s3-obs_feedback').value,
+                obs_gerais: document.getElementById('s3-obs_gerais').value,
+                responsavel: document.getElementById('s3-responsavel').value
+            }
+        };
+        checklistsCollection.doc(currentEditingId).set(dataToUpdate, { merge: true })
+            .then(() => navigateTo('view-dashboard'))
+            .catch(error => console.error("Erro ao finalizar: ", error));
+    }
+    
+    function abrirModal(id) {
+        const item = checklists.find(c => c.id === id);
+        if (!item) return;
+
+        const container = document.getElementById('view-modal-container');
+        const dataFormatada = item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A';
+        const secao1 = item.secao1 || {};
+        const secao2 = item.secao2 || {};
+        const secao3 = item.secao3 || {};
+        
+        let divergenciasHTML = '';
+        if (secao2.carga_divergente === 'Sim') {
+            const tipos = [
+                {label: 'Dev. Total', data: secao2.divergencia_dev_total},
+                {label: 'Dev. Parcial', data: secao2.divergencia_dev_parcial},
+                {label: 'Falta', data: secao2.divergencia_falta},
+            ];
+            tipos.forEach(tipo => {
+                if(tipo.data && tipo.data.length > 0) {
+                    divergenciasHTML += `<h5 class="font-semibold mt-1">Divergência: ${tipo.label}</h5>`;
+                    tipo.data.forEach(d => {
+                       divergenciasHTML += `<p class="pl-2">- NF: ${d.nf}, Prod: ${d.produto}, Qtd: ${d.qtd}</p>`;
+                    });
+                }
+            });
+        }
+
+        container.innerHTML = `
+            <div id="view-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-30 modal-backdrop">
+                <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col modal-content">
+                    <div class="p-4 border-b flex justify-between items-center"><h3 class="text-lg font-bold text-gray-800">Detalhes do Checklist - Carga ${secao1.carga}</h3><button onclick="fecharModal()" class="text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button></div>
+                    <div class="p-6 overflow-y-auto space-y-4 text-sm">
+                        <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 1: Documentos</span><span class="font-normal text-xs text-gray-500">Criado por: ${item.criadoPor || 'N/A'}</span></h4><p><strong>Data:</strong> ${dataFormatada}</p><p><strong>Veículo:</strong> ${secao1.veiculo || 'N/A'}</p><div class="mt-2 pt-2 border-t"><h5 class="font-semibold mb-1">Notas não Conforme:</h5><p><strong>Falta N.F:</strong> ${(secao1.falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Falta Assinatura:</strong> ${(secao1.falta_assinatura || []).join(', ') || 'Nenhuma'}</p><p><strong>Foto Canhoto:</strong> ${(secao1.foto_canhoto || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Falta N.F:</strong> ${(secao1.dev_falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Total:</strong> ${(secao1.dev_total || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Parcial:</strong> ${(secao1.dev_parcial || []).join(', ') || 'Nenhuma'}</p></div><div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-3 gap-2"><div><strong>Cartão Comb.:</strong> ${secao1.cartao_combustivel || 'N/A'}</div><div><strong>Celular:</strong> ${secao1.celular || 'N/A'}</div><div><strong>Carregador:</strong> ${secao1.carregador || 'N/A'}</div></div></div>
+                        <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 2: Ativos / Produtos</span><span class="font-normal text-xs text-gray-500">Conferido por: ${item.conferidoPor || 'Pendente'}</span></h4><div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><div><strong>Caçamba:</strong> ${secao2.cacamba !== undefined ? secao2.cacamba : 'Pendente'}</div><div><strong>Gaiola:</strong> ${secao2.gaiola !== undefined ? secao2.gaiola : 'Pendente'}</div><div><strong>Palete:</strong> ${secao2.palete !== undefined ? secao2.palete : 'Pendente'}</div><div><strong>Chapatex:</strong> ${secao2.chapatex !== undefined ? secao2.chapatex : 'Pendente'}</div></div><div class="mt-2 pt-2 border-t"><p><strong>Produtos Conferidos:</strong> ${secao2.produtos_conferidos || 'Pendente'}</p><p><strong>Carga Divergente:</strong> ${secao2.carga_divergente || 'Pendente'}</p><div class="mt-1 pl-4">${divergenciasHTML}</div></div></div>
+                        <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 3: Administrativo</span><span class="font-normal text-xs text-gray-500">Finalizado por: ${item.finalizadoPor || 'Pendente'}</span></h4><p><strong>Motorista:</strong> ${secao3.motorista || 'Pendente'}</p><p><strong>Ajudante 1:</strong> ${secao3.ajudante1 || 'Pendente'}</p><p><strong>Ajudante 2:</strong> ${secao3.ajudante2 || 'N/A'}</p><div class="mt-2 pt-2 border-t"><p><strong>Orientação Arrumação:</strong> ${secao3.obs_arrumacao || 'Pendente'}</p><p><strong>Validação Fusion:</strong> ${secao3.obs_fusion || 'Pendente'}</p><p><strong>Lançamento Ocorrências:</strong> ${secao3.obs_ocorrencias || 'Pendente'}</p><p><strong>Geração Devolução:</strong> ${secao3.obs_devolucao || 'Pendente'}</p><p><strong>Feedback Rota:</strong> ${secao3.obs_feedback || 'Pendente'}</p><p><strong>Obs. Gerais:</strong> ${secao3.obs_gerais || 'Pendente'}</p></div><div class="mt-2 pt-2 border-t bg-yellow-50 p-2 rounded"><h5 class="font-semibold">Tratativa Gestão (Documentos):</h5><p><strong>Status:</strong> ${secao3.tratativa1_status || 'Pendente'}</p><p><strong>Observação:</strong> ${secao3.tratativa1_obs || 'Nenhuma'}</p></div><div class="mt-2 bg-yellow-50 p-2 rounded"><h5 class="font-semibold">Tratativa Gestão (Produtos):</h5><p><strong>Status:</strong> ${secao3.tratativa2_status || 'Pendente'}</p><p><strong>Observação:</strong> ${secao3.tratativa2_obs || 'Nenhuma'}</p></div><p class="mt-2 pt-2 border-t"><strong>Responsável Final:</strong> ${secao3.responsavel || 'Pendente'}</p></div>
+                    </div>
+                    <div class="p-4 bg-gray-50 border-t text-right"><button onclick="fecharModal()" class="bg-gray-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-600 transition">Fechar</button></div>
+                </div>
+            </div>`;
+    }
+
+    function exportarExcel() {
+        const concluidos = checklists.filter(item => item.status === 'Concluído');
+        if (concluidos.length === 0) { alert('Não há checklists concluídos para exportar.'); return; }
+        const dadosParaExportar = concluidos.map(item => {
+            const secao1 = item.secao1 || {};
+            const secao2 = item.secao2 || {};
+            const secao3 = item.secao3 || {};
+            const formatDivergencia = (data) => (data || []).map(d => `NF:${d.nf},Prod:${d.produto},Qtd:${d.qtd}`).join('; ');
+            return {
+                'Data': item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString('pt-BR') : '',
+                'Carga': secao1.carga, 'Veículo': secao1.veiculo,
+                'Criado Por': item.criadoPor, 'Conferido Por': item.conferidoPor, 'Finalizado Por': item.finalizadoPor,
+                'Falta NF': (secao1.falta_nf || []).join(', '), 'Falta Assinatura': (secao1.falta_assinatura || []).join(', '),
+                'Foto Canhoto': (secao1.foto_canhoto || []).join(', '), 'Dev. Falta NF': (secao1.dev_falta_nf || []).join(', '),
+                'Dev. Total': (secao1.dev_total || []).join(', '), 'Dev. Parcial': (secao1.dev_parcial || []).join(', '),
+                'Cartão Combustível': secao1.cartao_combustivel, 'Celular': secao1.celular, 'Carregador': secao1.carregador,
+                'Qtd Caçamba': secao2.cacamba, 'Qtd Gaiola': secao2.gaiola, 'Qtd Palete': secao2.palete, 'Qtd Chapatex': secao2.chapatex,
+                'Produtos Conferidos?': secao2.produtos_conferidos, 'Carga Divergente?': secao2.carga_divergente,
+                'Divergência Dev Total': formatDivergencia(secao2.divergencia_dev_total),
+                'Divergência Dev Parcial': formatDivergencia(secao2.divergencia_dev_parcial),
+                'Divergência Falta': formatDivergencia(secao2.divergencia_falta),
+                'Motorista': secao3.motorista, 'Ajudante 1': secao3.ajudante1, 'Ajudante 2': secao3.ajudante2,
+                'Status Tratativa Docs': secao3.tratativa1_status, 'Obs Tratativa Docs': secao3.tratativa1_obs,
+                'Status Tratativa Prods': secao3.tratativa2_status, 'Obs Tratativa Prods': secao3.tratativa2_obs,
+                'Obs Arrumação': secao3.obs_arrumacao, 'Obs Fusion': secao3.obs_fusion, 'Obs Lanç. Ocorrências': secao3.obs_ocorrencias,
+                'Obs Geração Devolução': secao3.obs_devolucao, 'Obs Feedback Rota': secao3.obs_feedback, 'Obs Gerais': secao3.obs_gerais,
+                'Responsável Final': secao3.responsavel
+            }
+        });
+        const worksheet = XLSX.utils.json_to_sheet(dadosParaExportar);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Relatório Checklists");
+        const objectMaxLength = [];
+        dadosParaExportar.forEach(obj => { Object.keys(obj).forEach((key, i) => { let len = (obj[key] || "").toString().length; if (objectMaxLength[i] === undefined || objectMaxLength[i] < len) { objectMaxLength[i] = len; } }); });
+        worksheet["!cols"] = objectMaxLength.map(w => ({ width: w + 2 }));
+        XLSX.writeFile(workbook, "Relatorio_Checklists_Concluidos.xlsx");
+    }
+
+    // --- FILTROS ---
+    function aplicarFiltros() {
+        const busca = document.getElementById('filtro-busca').value.toLowerCase();
+        const status = document.getElementById('filtro-status').value;
+        let dadosFiltrados = checklists.filter(item => {
+            const matchBusca = !busca || (item.secao1 && item.secao1.carga && item.secao1.carga.toLowerCase().includes(busca));
+            const matchStatus = !status || item.status === status;
+            return matchBusca && matchStatus;
+        });
+        renderizarTabela(dadosFiltrados);
+    }
+    document.getElementById('filtro-busca').addEventListener('input', aplicarFiltros);
+    document.getElementById('filtro-status').addEventListener('change', aplicarFiltros);
+
+    </script>
+</body>
+</html>
+
+
