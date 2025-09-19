@@ -1,7 +1,7 @@
 {
 "name": "Rio Quality - Checklist",
 "short_name": "RQ Checklist",
-"start_url": "/index.html",
+"start_url": "/checklist/",
 "display": "standalone",
 "background_color": "#ffffff",
 "theme_color": "#3b82f6",
