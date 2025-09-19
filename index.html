@@ -3,8 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rio Quality - Checklist de Retorno</title>
-    <link rel="manifest" href="/manifest.json">
+    <!-- PWA Tags -->
+    <meta name="theme-color" content="#3b82f6">
+    <title>Rio Quality - Checklist</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="images/icons/icon-192x192.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Biblioteca para gerar arquivos Excel -->
@@ -1990,6 +1994,17 @@
         worksheet["!cols"] = objectMaxLength.map(w => ({ width: w + 2 }));
 
         XLSX.writeFile(workbook, "Relatorio_Checklists_Frota.xlsx");
+    }
+
+    // <-- NOVO: Script para registrar o Service Worker -->
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').then(registration => {
+                console.log('ServiceWorker registrado com sucesso: ', registration.scope);
+            }, function(err) {
+                console.log('Falha no registro do ServiceWorker: ', err);
+            });
+        });
     }
 
     </script>
