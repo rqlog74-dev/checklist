@@ -78,15 +78,15 @@
                 <h1 id="header-title" class="text-lg md:text-xl font-bold text-gray-800">Painel de Checklists</h1>
             </div>
             <div id="header-user" class="flex items-center space-x-3">
-                 <div class="text-right">
+                <div class="text-right">
                     <p id="current-user-name" class="font-semibold text-sm text-gray-700"></p>
                     <p id="current-user-role" class="text-xs text-gray-500"></p>
-                 </div>
-                 <button onclick="logout()" title="Sair" class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold text-lg hover:bg-gray-300 transition">
-                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                         <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                     </svg>
-                 </button>
+                </div>
+                <button onclick="logout()" title="Sair" class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center text-gray-600 font-bold text-lg hover:bg-gray-300 transition">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                </button>
             </div>
         </header>
 
@@ -137,14 +137,15 @@
                                     </div>
                                 </div>
                                  <div class="flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-2 mb-4">
-                                     <input type="date" id="filtro-data" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                     <input type="text" id="filtro-busca" placeholder="Buscar por Carga..." class="w-full md:w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                     <select id="filtro-status" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                         <option value="">Todos os Status</option>
-                                         <option value="Aguardando Conferência">Aguardando Conferência</option>
-                                         <option value="Aguardando Admin">Aguardando Admin</option>
-                                         <option value="Concluído">Concluído</option>
-                                     </select>
+                                    <input type="date" id="filtro-data-inicio" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Início">
+                                    <input type="date" id="filtro-data-fim" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Fim">
+                                    <input type="text" id="filtro-busca" placeholder="Buscar por Carga..." class="w-full md:w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                    <select id="filtro-status" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                        <option value="">Todos os Status</option>
+                                        <option value="Aguardando Conferência">Aguardando Conferência</option>
+                                        <option value="Aguardando Admin">Aguardando Admin</option>
+                                        <option value="Concluído">Concluído</option>
+                                    </select>
                                  </div>
                                 <div class="flex-1 overflow-x-auto">
                                     <table class="w-full text-sm text-left text-gray-600">
@@ -161,7 +162,7 @@
                                         </tbody>
                                     </table>
                                 </div>
-                                 <!-- Paginação -->
+                                <!-- Paginação -->
                                 <div id="pagination-controls" class="mt-4 flex justify-between items-center text-sm">
                                     <button id="prev-page-btn" class="bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">Anterior</button>
                                     <span id="page-info">Página 1</span>
@@ -207,8 +208,9 @@
                                     </div>
                                 </div>
                                 <div class="flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-2 mb-4">
-                                    <input type="date" id="filtro-data-frota" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
-                                    <input type="text" id="filtro-busca-frota" placeholder="Buscar por Placa..." class="w-full md:w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                                     <input type="date" id="filtro-data-inicio-frota" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Início">
+                                     <input type="date" id="filtro-data-fim-frota" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Fim">
+                                    <input type="text" id="filtro-busca-frota" placeholder="Buscar por Placa ou Carga..." class="w-full md:w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                 </div>
                                 <div class="flex-1 overflow-x-auto">
                                     <table class="w-full text-sm text-left text-gray-600">
@@ -216,6 +218,7 @@
                                             <tr>
                                                 <th scope="col" class="py-2 px-2 sm:py-3 sm:px-4">Data</th>
                                                 <th scope="col" class="py-2 px-2 sm:py-3 sm:px-4">Placa</th>
+                                                <th scope="col" class="py-2 px-2 sm:py-3 sm:px-4">Carga</th>
                                                 <th scope="col" class="py-2 px-2 sm:py-3 sm:px-4">Motorista</th>
                                                 <th scope="col" class="py-2 px-2 sm:py-3 sm:px-4">Criado por</th>
                                                 <th scope="col" class="py-2 px-2 sm:py-3 sm:px-4">Status</th>
@@ -223,11 +226,11 @@
                                             </tr>
                                         </thead>
                                         <tbody id="tabela-checklists-frota">
-                                            <tr><td colspan="6" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Carregando dados...</div></td></tr>
+                                            <tr><td colspan="7" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Carregando dados...</div></td></tr>
                                         </tbody>
                                     </table>
                                 </div>
-                                 <!-- Paginação Frota -->
+                                <!-- Paginação Frota -->
                                 <div id="pagination-controls-frota" class="mt-4 flex justify-between items-center text-sm">
                                     <button id="prev-page-btn-frota" class="bg-gray-200 px-4 py-2 rounded-md hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">Anterior</button>
                                     <span id="page-info-frota">Página 1</span>
@@ -326,7 +329,7 @@
 
 
     // ===============================================================
-    //              LÓGICA DE AUTENTICAÇÃO E DADOS INICIAIS
+    //                LÓGICA DE AUTENTICAÇÃO E DADOS INICIAIS
     // ===============================================================
     const loginForm = document.getElementById('login-form');
     const loginError = document.getElementById('login-error');
@@ -418,7 +421,7 @@
 
     <script>
     // ===============================================================
-    //              LÓGICA DE RENDERIZAÇÃO, FORMULÁRIOS E AÇÕES
+    //                LÓGICA DE RENDERIZAÇÃO, FORMULÁRIOS E AÇÕES
     // ===============================================================
     
     // --- NOTIFICAÇÕES (TOAST) ---
@@ -455,6 +458,14 @@
     
     function toggleDivergencia(show) { 
         const detailsDiv = document.getElementById('divergencia-details'); 
+        if (detailsDiv) {
+            detailsDiv.style.display = show ? 'block' : 'none';
+        }
+    }
+
+    // <-- NOVO --> Função para mostrar/ocultar detalhes da sobra
+    function toggleSobra(show) {
+        const detailsDiv = document.getElementById('sobra-details');
         if (detailsDiv) {
             detailsDiv.style.display = show ? 'block' : 'none';
         }
@@ -502,12 +513,12 @@
 
     function updatePermissions() {
         const btnNovo = document.getElementById('btn-novo-checklist');
-        if (currentUser && currentUser.role === 'Transporte') {
+        if (currentUser && (currentUser.role === 'Transporte' || currentUser.role === 'Master')) {
             btnNovo.disabled = false;
             btnNovo.title = '';
         } else {
             btnNovo.disabled = true;
-            btnNovo.title = 'Apenas usuários de Transporte podem criar checklists.';
+            btnNovo.title = 'Apenas usuários de Transporte ou Master podem criar checklists.';
         }
 
         const btnNovoFrota = document.getElementById('btn-novo-checklist-frota');
@@ -577,6 +588,21 @@
         newRow.innerHTML = `
             <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
             <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm col-span-2">
+            <div class="flex items-center space-x-2">
+                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
+            </div>
+        `;
+        container.appendChild(newRow);
+    }
+    
+    // <-- NOVO --> Função para adicionar campos de sobra
+    function addSobraInput(containerId) {
+        const container = document.getElementById(containerId);
+        const newRow = document.createElement('div');
+        newRow.className = 'grid grid-cols-1 md:grid-cols-4 gap-2 items-center mt-2';
+        newRow.innerHTML = `
+            <input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
             <div class="flex items-center space-x-2">
                 <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
                 <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
@@ -684,6 +710,15 @@
                     }
                 });
             }
+            
+            // <-- NOVO --> Lógica para exibir sobras no resumo
+            let sobrasHTML = '';
+            if (secao2.tem_sobra === 'Sim' && secao2.sobras && secao2.sobras.length > 0) {
+                sobrasHTML += `<h5 class="font-semibold mt-1">Sobras:</h5>`;
+                secao2.sobras.forEach(s => {
+                    sobrasHTML += `<p class="pl-2">- Prod: ${s.produto}, Qtd: ${s.qtd}</p>`;
+                });
+            }
 
             summaryHTML += `
                 <div class="p-3 bg-gray-100 rounded-lg text-sm mt-2">
@@ -700,9 +735,42 @@
                     <div class="mt-2 pt-2 border-t">
                         <p><strong>Produtos Conferidos:</strong> ${secao2.produtos_conferidos || 'Pendente'}</p>
                         <p><strong>Carga Divergente:</strong> ${secao2.carga_divergente || 'Pendente'}</p>
-                        <div class="mt-1 pl-4">${divergenciasHTML || 'Nenhuma'}</div>
+                        <div class="mt-1 pl-4">${divergenciasHTML || ''}</div>
+                        <!-- NOVO: Exibição da sobra -->
+                        <p class="mt-2"><strong>Tem Sobra:</strong> ${secao2.tem_sobra || 'Pendente'}</p>
+                        <div class="mt-1 pl-4">${sobrasHTML || ''}</div>
                     </div>
                 </div>`;
+
+             // Lógica para buscar e exibir não conformidades do checklist de frota
+            const cargaNumero = item.secao1.carga;
+            let frotaSummaryHTML = `
+                <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm mt-2">
+                    <h4 class="font-bold mb-2 text-base text-red-800">Resumo Checklist de Frota (Não Conformidades)</h4>`;
+
+            if (cargaNumero) {
+                const checklistFrota = allChecklistsFrota.find(c => c.carga === cargaNumero);
+
+                if (checklistFrota && checklistFrota.status === 'Não Conforme') {
+                    frotaSummaryHTML += `<p class="mb-2"><strong>Placa:</strong> ${checklistFrota.placa} | <strong>Motorista:</strong> ${checklistFrota.motorista}</p>`;
+                    let naoConformidades = '';
+                    frotaItems.forEach(spec => {
+                        const itemData = checklistFrota.itens[spec.id];
+                        if (itemData && itemData.status === 'Não Conforme') {
+                            naoConformidades += `<li class="text-sm">- ${spec.label}: ${itemData.obs || 'Sem observação'}</li>`;
+                        }
+                    });
+                    frotaSummaryHTML += `<ul class="list-disc list-inside space-y-1">${naoConformidades}</ul>`;
+                } else if (checklistFrota) {
+                    frotaSummaryHTML += `<p class="text-sm text-green-700">Checklist de frota encontrado e está conforme.</p>`;
+                } else {
+                    frotaSummaryHTML += `<p class="text-sm text-gray-500">Nenhum checklist de frota correspondente a esta carga foi encontrado.</p>`;
+                }
+            } else {
+                frotaSummaryHTML += `<p class="text-sm text-gray-500">Número da carga não informado no checklist de retorno.</p>`;
+            }
+            frotaSummaryHTML += `</div>`;
+            summaryHTML += frotaSummaryHTML;
 
             summaryHTML += `
                 <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm mt-4">
@@ -721,36 +789,58 @@
         if (etapa === 2) {
             formHTML = `
                 <fieldset class="space-y-4">
-                     <h3 class="font-semibold text-gray-700 border-b pb-2">2° ATIVOS / PRODUTOS DIVERGENTE</h3>
-                     <div class="pt-2">
-                         <label class="text-sm font-medium text-gray-700">Ativos retornados (quantidade):</label>
-                         <div class="grid grid-cols-2 gap-x-4 gap-y-3 mt-2">
-                             <div><label for="s2-qtd_cacamba" class="text-xs text-gray-600">Caçamba</label><input type="number" id="s2-qtd_cacamba" value="${secao2.cacamba || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                             <div><label for="s2-qtd_gaiola" class="text-xs text-gray-600">Gaiola</label><input type="number" id="s2-qtd_gaiola" value="${secao2.gaiola || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                             <div><label for="s2-qtd_palete" class="text-xs text-gray-600">Palete</label><input type="number" id="s2-qtd_palete" value="${secao2.palete || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                             <div><label for="s2-qtd_chapatex" class="text-xs text-gray-600">Chapatex</label><input type="number" id="s2-qtd_chapatex" value="${secao2.chapatex || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                         </div>
-                     </div>
-                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
-                         <div><label class="text-sm font-medium text-gray-700">Produtos conferidos?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div>
-                         <div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" class="mr-2 h-4 w-4" onchange="toggleDivergencia(true)"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" class="mr-2 h-4 w-4" onchange="toggleDivergencia(false)" checked> Não</label></div></div>
-                     </div>
-                     <div id="divergencia-details" class="hidden space-y-4 border-t pt-4">
-                         <div id="divergencia-tipo-dev_total"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Total)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_total')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                         <div id="divergencia-tipo-dev_parcial"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Parcial)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_parcial')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                         <div id="divergencia-tipo-falta"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Falta)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-falta')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                         <div id="divergencia-tipo-retira_oc"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Retira O.C)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-retira_oc')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                     </div>
-                     <button type="button" onclick="salvarEtapa2()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Admin</button>
+                    <h3 class="font-semibold text-gray-700 border-b pb-2">2° ATIVOS / PRODUTOS DIVERGENTE</h3>
+                    <div class="pt-2">
+                        <label class="text-sm font-medium text-gray-700">Ativos retornados (quantidade):</label>
+                        <div class="grid grid-cols-2 gap-x-4 gap-y-3 mt-2">
+                            <div><label for="s2-qtd_cacamba" class="text-xs text-gray-600">Caçamba</label><input type="number" id="s2-qtd_cacamba" value="${secao2.cacamba || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                            <div><label for="s2-qtd_gaiola" class="text-xs text-gray-600">Gaiola</label><input type="number" id="s2-qtd_gaiola" value="${secao2.gaiola || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                            <div><label for="s2-qtd_palete" class="text-xs text-gray-600">Palete</label><input type="number" id="s2-qtd_palete" value="${secao2.palete || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                            <div><label for="s2-qtd_chapatex" class="text-xs text-gray-600">Chapatex</label><input type="number" id="s2-qtd_chapatex" value="${secao2.chapatex || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
+                        <div><label class="text-sm font-medium text-gray-700">Produtos conferidos?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div>
+                        <div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" class="mr-2 h-4 w-4" onchange="toggleDivergencia(true)"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" class="mr-2 h-4 w-4" onchange="toggleDivergencia(false)" checked> Não</label></div></div>
+                    </div>
+                    
+                    <!-- NOVO: Seção de Sobra -->
+                    <div class="border-t pt-4">
+                        <label class="text-sm font-medium text-gray-700">Tem sobra?</label>
+                        <div class="flex space-x-6 mt-2">
+                            <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Sim" class="mr-2 h-4 w-4" onchange="toggleSobra(true)"> Sim</label>
+                            <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Não" class="mr-2 h-4 w-4" onchange="toggleSobra(false)" checked> Não</label>
+                        </div>
+                    </div>
+                    <div id="sobra-details" class="hidden space-y-4 border-t pt-4">
+                        <div id="sobra-container">
+                            <h4 class="text-sm font-semibold text-gray-600">Detalhes da Sobra</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+                                <input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                                <div class="flex items-center space-x-2">
+                                    <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                                    <button type="button" onclick="addSobraInput('sobra-container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="divergencia-details" class="hidden space-y-4 border-t pt-4">
+                        <div id="divergencia-tipo-dev_total"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Total)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_total')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                        <div id="divergencia-tipo-dev_parcial"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Parcial)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_parcial')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                        <div id="divergencia-tipo-falta"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Falta)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-falta')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                        <div id="divergencia-tipo-retira_oc"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Retira O.C)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-retira_oc')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                    </div>
+                    <button type="button" onclick="salvarEtapa2()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Admin</button>
                 </fieldset>`;
         } else if (etapa === 3) {
             formHTML = `
                 <fieldset class="space-y-4">
                     <h3 class="font-semibold text-gray-700 border-b pb-2">3 - Sala (Administrativa)</h3>
-                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                         <div><label for="s3-motorista" class="text-sm font-medium text-gray-700">Motorista</label><input type="text" id="s3-motorista" placeholder="Nome do motorista" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                         <div><label for="s3-ajudante1" class="text-sm font-medium text-gray-700">Ajudante 1</label><input type="text" id="s3-ajudante1" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                         <div class="sm:col-span-2"><label for="s3-ajudante2" class="text-sm font-medium text-gray-700">Ajudante 2 (Opcional)</label><input type="text" id="s3-ajudante2" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                        <div><label for="s3-motorista" class="text-sm font-medium text-gray-700">Motorista</label><input type="text" id="s3-motorista" placeholder="Nome do motorista" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                        <div><label for="s3-ajudante1" class="text-sm font-medium text-gray-700">Ajudante 1</label><input type="text" id="s3-ajudante1" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                        <div class="sm:col-span-2"><label for="s3-ajudante2" class="text-sm font-medium text-gray-700">Ajudante 2 (Opcional)</label><input type="text" id="s3-ajudante2" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
                     </div>
                     <div class="border-t pt-4 space-y-3">
                         <div><label for="s3-obs_arrumacao" class="text-sm font-medium text-gray-700">Orientação quanto à arrumação do baú</label><input type="text" id="s3-obs_arrumacao" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
@@ -793,6 +883,21 @@
             const nf = nfInput.value || '';
             if(nf || produto || qtd) {
                 return { nf, produto, qtd };
+            }
+            return null;
+        }).filter(item => item !== null);
+    }
+    
+    // <-- NOVO --> Função para obter valores dos campos de sobra
+    function getSobraInputValues(containerId) {
+        const container = document.getElementById(containerId);
+        if (!container) return [];
+        // Mapeia cada linha de produto/qtd
+        return Array.from(container.querySelectorAll('.grid.items-center')).map(row => {
+            const produto = row.querySelector('.produto')?.value || '';
+            const qtd = row.querySelector('.qtd')?.value || '';
+            if (produto || qtd) {
+                return { produto, qtd };
             }
             return null;
         }).filter(item => item !== null);
@@ -853,6 +958,10 @@
                 chapatex: document.getElementById('s2-qtd_chapatex').value,
                 produtos_conferidos: document.querySelector('input[name="s2-produtos_conferidos"]:checked')?.value || '',
                 carga_divergente: document.querySelector('input[name="s2-carga_divergente"]:checked')?.value || '',
+                // <-- NOVO --> Salvando dados de sobra
+                tem_sobra: document.querySelector('input[name="s2-tem_sobra"]:checked')?.value || '',
+                sobras: getSobraInputValues('sobra-container'),
+                // Fim da adição
                 divergencia_dev_total: getDivergenciaInputValues('divergencia-tipo-dev_total'),
                 divergencia_dev_parcial: getDivergenciaInputValues('divergencia-tipo-dev_parcial'),
                 divergencia_falta: getDivergenciaInputValues('divergencia-tipo-falta'),
@@ -935,14 +1044,59 @@
             });
         }
 
+        // <-- NOVO --> Lógica para exibir sobras no modal
+        let sobrasHTML = '';
+        if (secao2.tem_sobra === 'Sim' && secao2.sobras && secao2.sobras.length > 0) {
+            sobrasHTML += `<h5 class="font-semibold mt-1">Sobras:</h5>`;
+            secao2.sobras.forEach(s => {
+                sobrasHTML += `<p class="pl-2">- Prod: ${s.produto}, Qtd: ${s.qtd}</p>`;
+            });
+        }
+
+        // <-- ALTERADO --> Lógica de permissão para visualizar a Seção 3
+        let secao3HTML = '';
+        if (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Master')) {
+            secao3HTML = `
+                <div class="p-3 bg-gray-100 rounded-lg">
+                    <h4 class="font-bold mb-2 text-base flex justify-between items-center">
+                        <span>Seção 3: Administrativo</span>
+                        <span class="font-normal text-xs text-gray-500">Finalizado por: ${item.finalizadoPor || 'Pendente'}</span>
+                    </h4>
+                    <p><strong>Motorista:</strong> ${secao3.motorista || 'Pendente'}</p>
+                    <p><strong>Ajudante 1:</strong> ${secao3.ajudante1 || 'Pendente'}</p>
+                    <p><strong>Ajudante 2:</strong> ${secao3.ajudante2 || 'N/A'}</p>
+                    <div class="mt-2 pt-2 border-t">
+                        <p><strong>Orientação Arrumação:</strong> ${secao3.obs_arrumacao || 'Pendente'}</p>
+                        <p><strong>Validação Fusion:</strong> ${secao3.obs_fusion || 'Pendente'}</p>
+                        <p><strong>Lançamento Ocorrências:</strong> ${secao3.obs_ocorrencias || 'Pendente'}</p>
+                        <p><strong>Geração Devolução:</strong> ${secao3.obs_devolucao || 'Pendente'}</p>
+                        <p><strong>Feedback Rota:</strong> ${secao3.obs_feedback || 'Pendente'}</p>
+                        <p><strong>Obs. Gerais:</strong> ${secao3.obs_gerais || 'Pendente'}</p>
+                    </div>
+                    <div class="mt-2 pt-2 border-t bg-yellow-50 p-2 rounded">
+                        <h5 class="font-semibold">Tratativa Gestão (Documentos):</h5>
+                        <p><strong>Status:</strong> ${secao3.tratativa1_status || 'Pendente'}</p>
+                        <p><strong>Observação:</strong> ${secao3.tratativa1_obs || 'Nenhuma'}</p>
+                    </div>
+                    <div class="mt-2 bg-yellow-50 p-2 rounded">
+                        <h5 class="font-semibold">Tratativa Gestão (Produtos):</h5>
+                        <p><strong>Status:</strong> ${secao3.tratativa2_status || 'Pendente'}</p>
+                        <p><strong>Observação:</strong> ${secao3.tratativa2_obs || 'Nenhuma'}</p>
+                    </div>
+                    <p class="mt-2 pt-2 border-t"><strong>Responsável Final:</strong> ${secao3.responsavel || 'Pendente'}</p>
+                </div>
+            `;
+        }
+
+
         container.innerHTML = `
             <div id="view-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-30 modal-backdrop">
                 <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col modal-content">
                     <div class="p-4 border-b flex justify-between items-center"><h3 class="text-lg font-bold text-gray-800">Detalhes do Checklist - Carga ${secao1.carga}</h3><button onclick="fecharModal()" class="text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button></div>
                     <div class="p-6 overflow-y-auto space-y-4 text-sm">
                         <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 1: Documentos</span><span class="font-normal text-xs text-gray-500">Criado por: ${item.criadoPor || 'N/A'}</span></h4><p><strong>Data:</strong> ${dataFormatada}</p><p><strong>Veículo:</strong> ${secao1.veiculo || 'N/A'}</p><div class="mt-2 pt-2 border-t"><h5 class="font-semibold mb-1">Notas não Conforme:</h5><p><strong>Falta N.F:</strong> ${(secao1.falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Falta Assinatura:</strong> ${(secao1.falta_assinatura || []).join(', ') || 'Nenhuma'}</p><p><strong>Foto Canhoto:</strong> ${(secao1.foto_canhoto || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Falta N.F:</strong> ${(secao1.dev_falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Total:</strong> ${(secao1.dev_total || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Parcial:</strong> ${(secao1.dev_parcial || []).join(', ') || 'Nenhuma'}</p><p><strong>Retira O.C:</strong> ${(secao1.retira_oc || []).join(', ') || 'Nenhuma'}</p></div><div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-3 gap-2"><div><strong>Cartão Comb.:</strong> ${secao1.cartao_combustivel || 'N/A'}</div><div><strong>Celular:</strong> ${secao1.celular || 'N/A'}</div><div><strong>Carregador:</strong> ${secao1.carregador || 'N/A'}</div></div></div>
-                        <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 2: Ativos / Produtos</span><span class="font-normal text-xs text-gray-500">Conferido por: ${item.conferidoPor || 'Pendente'}</span></h4><div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><div><strong>Caçamba:</strong> ${secao2.cacamba !== undefined ? secao2.cacamba : 'Pendente'}</div><div><strong>Gaiola:</strong> ${secao2.gaiola !== undefined ? secao2.gaiola : 'Pendente'}</div><div><strong>Palete:</strong> ${secao2.palete !== undefined ? secao2.palete : 'Pendente'}</div><div><strong>Chapatex:</strong> ${secao2.chapatex !== undefined ? secao2.chapatex : 'Pendente'}</div></div><div class="mt-2 pt-2 border-t"><p><strong>Produtos Conferidos:</strong> ${secao2.produtos_conferidos || 'Pendente'}</p><p><strong>Carga Divergente:</strong> ${secao2.carga_divergente || 'Pendente'}</p><div class="mt-1 pl-4">${divergenciasHTML}</div></div></div>
-                        <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 3: Administrativo</span><span class="font-normal text-xs text-gray-500">Finalizado por: ${item.finalizadoPor || 'Pendente'}</span></h4><p><strong>Motorista:</strong> ${secao3.motorista || 'Pendente'}</p><p><strong>Ajudante 1:</strong> ${secao3.ajudante1 || 'Pendente'}</p><p><strong>Ajudante 2:</strong> ${secao3.ajudante2 || 'N/A'}</p><div class="mt-2 pt-2 border-t"><p><strong>Orientação Arrumação:</strong> ${secao3.obs_arrumacao || 'Pendente'}</p><p><strong>Validação Fusion:</strong> ${secao3.obs_fusion || 'Pendente'}</p><p><strong>Lançamento Ocorrências:</strong> ${secao3.obs_ocorrencias || 'Pendente'}</p><p><strong>Geração Devolução:</strong> ${secao3.obs_devolucao || 'Pendente'}</p><p><strong>Feedback Rota:</strong> ${secao3.obs_feedback || 'Pendente'}</p><p><strong>Obs. Gerais:</strong> ${secao3.obs_gerais || 'Pendente'}</p></div><div class="mt-2 pt-2 border-t bg-yellow-50 p-2 rounded"><h5 class="font-semibold">Tratativa Gestão (Documentos):</h5><p><strong>Status:</strong> ${secao3.tratativa1_status || 'Pendente'}</p><p><strong>Observação:</strong> ${secao3.tratativa1_obs || 'Nenhuma'}</p></div><div class="mt-2 bg-yellow-50 p-2 rounded"><h5 class="font-semibold">Tratativa Gestão (Produtos):</h5><p><strong>Status:</strong> ${secao3.tratativa2_status || 'Pendente'}</p><p><strong>Observação:</strong> ${secao3.tratativa2_obs || 'Nenhuma'}</p></div><p class="mt-2 pt-2 border-t"><strong>Responsável Final:</strong> ${secao3.responsavel || 'Pendente'}</p></div>
+                        <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 2: Ativos / Produtos</span><span class="font-normal text-xs text-gray-500">Conferido por: ${item.conferidoPor || 'Pendente'}</span></h4><div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><div><strong>Caçamba:</strong> ${secao2.cacamba !== undefined ? secao2.cacamba : 'Pendente'}</div><div><strong>Gaiola:</strong> ${secao2.gaiola !== undefined ? secao2.gaiola : 'Pendente'}</div><div><strong>Palete:</strong> ${secao2.palete !== undefined ? secao2.palete : 'Pendente'}</div><div><strong>Chapatex:</strong> ${secao2.chapatex !== undefined ? secao2.chapatex : 'Pendente'}</div></div><div class="mt-2 pt-2 border-t"><p><strong>Produtos Conferidos:</strong> ${secao2.produtos_conferidos || 'Pendente'}</p><p><strong>Carga Divergente:</strong> ${secao2.carga_divergente || 'Pendente'}</p><div class="mt-1 pl-4">${divergenciasHTML}</div><p class="mt-2"><strong>Tem Sobra:</strong> ${secao2.tem_sobra || 'Pendente'}</p><div class="mt-1 pl-4">${sobrasHTML}</div></div></div>
+                        ${secao3HTML}
                     </div>
                     <div class="p-4 bg-gray-50 border-t text-right"><button onclick="fecharModal()" class="bg-gray-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-600 transition">Fechar</button></div>
                 </div>
@@ -989,13 +1143,13 @@
     }
 
     function iniciarEdicao(id) {
-         currentEditingId = id;
-         const item = allChecklists.find(c => c.id === id);
-         if (!item) { return; }
+       currentEditingId = id;
+       const item = allChecklists.find(c => c.id === id);
+       if (!item) { return; }
 
-         const s1 = item.secao1 || {};
-         const s2 = item.secao2 || {};
-         const s3 = item.secao3 || {};
+       const s1 = item.secao1 || {};
+       const s2 = item.secao2 || {};
+       const s3 = item.secao3 || {};
 
         // Helper para gerar HTML de inputs dinâmicos com valores
         const createDynamicInputsHTML = (containerId, values = [], label) => {
@@ -1007,11 +1161,11 @@
                                     class="${isFirstAndOnly ? 'bg-blue-500 text-white' : 'text-red-500 hover:text-red-700'} rounded-full p-1 h-6 w-6 flex items-center justify-center font-bold text-lg">
                                 ${isFirstAndOnly ? '+' : '&times;'}
                             </button>
-                         </div>`;
+                          </div>`;
             }).join('');
              if (values.length > 1) { // Adiciona um botão de adicionar no final se houver múltiplos valores
-                inputsHTML += `<div class="flex items-center space-x-2 mt-2"><button type="button" onclick="addDynamicInput('${containerId}')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div>`;
-            }
+                 inputsHTML += `<div class="flex items-center space-x-2 mt-2"><button type="button" onclick="addDynamicInput('${containerId}')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div>`;
+             }
             return `<div><label class="text-sm text-gray-600">${label}</label><div id="${containerId}">${inputsHTML}</div></div>`;
         };
         
@@ -1032,9 +1186,30 @@
                         </div>`;
              }).join('');
               if (values.length > 1) {
-                inputsHTML += `<div class="flex items-center space-x-2 mt-2"><button type="button" onclick="addDivergenciaInput('${containerId}')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div>`;
-            }
+                  inputsHTML += `<div class="flex items-center space-x-2 mt-2"><button type="button" onclick="addDivergenciaInput('${containerId}')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div>`;
+              }
              return `<div id="${containerId}"><h4 class="text-sm font-semibold text-gray-600">${label}</h4>${inputsHTML}</div>`;
+        };
+        
+        // <-- NOVO --> Helper para inputs de sobra
+        const createSobraInputsHTML = (containerId, values = [], label) => {
+            let inputsHTML = (values.length > 0 ? values : [{produto: '', qtd: ''}]).map((sobra, index) => {
+                const isFirstAndOnly = values.length <= 1 && index === 0;
+                return `<div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center mt-2">
+                            <input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" value="${sobra.produto || ''}">
+                            <div class="flex items-center space-x-2">
+                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" value="${sobra.qtd || ''}">
+                                <button type="button" onclick="${isFirstAndOnly ? `addSobraInput('${containerId}')` : 'this.parentElement.parentElement.remove()'}"
+                                        class="${isFirstAndOnly ? 'bg-blue-500 text-white' : 'text-red-500 hover:text-red-700'} rounded-full p-1 h-6 w-6 flex items-center justify-center font-bold text-lg">
+                                    ${isFirstAndOnly ? '+' : '&times;'}
+                                </button>
+                            </div>
+                        </div>`;
+            }).join('');
+            if (values.length > 1) {
+                inputsHTML += `<div class="flex items-center space-x-2 mt-2"><button type="button" onclick="addSobraInput('${containerId}')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div>`;
+            }
+            return `<div id="${containerId}"><h4 class="text-sm font-semibold text-gray-600">${label}</h4>${inputsHTML}</div>`;
         };
 
         const radioChecked = (value, expected) => value === expected ? 'checked' : '';
@@ -1072,12 +1247,23 @@
                 <fieldset class="space-y-4 p-4 border rounded-md">
                     <h3 class="font-semibold text-gray-700 border-b pb-2">2 - Ativos / Produtos</h3>
                      <div class="pt-2"><label class="text-sm font-medium text-gray-700">Ativos retornados (quantidade):</label><div class="grid grid-cols-2 gap-x-4 gap-y-3 mt-2"><div><label for="s2-qtd_cacamba" class="text-xs text-gray-600">Caçamba</label><input type="number" id="s2-qtd_cacamba" value="${s2.cacamba || '0'}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div><div><label for="s2-qtd_gaiola" class="text-xs text-gray-600">Gaiola</label><input type="number" id="s2-qtd_gaiola" value="${s2.gaiola || '0'}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div><div><label for="s2-qtd_palete" class="text-xs text-gray-600">Palete</label><input type="number" id="s2-qtd_palete" value="${s2.palete || '0'}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div><div><label for="s2-qtd_chapatex" class="text-xs text-gray-600">Chapatex</label><input type="number" id="s2-qtd_chapatex" value="${s2.chapatex || '0'}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div></div></div>
-                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4"><div><label class="text-sm font-medium text-gray-700">Produtos conferidos?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Sim" ${radioChecked(s2.produtos_conferidos, 'Sim')} class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Não" ${radioChecked(s2.produtos_conferidos, 'Não')} class="mr-2 h-4 w-4"> Não</label></div></div><div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" ${radioChecked(s2.carga_divergente, 'Sim')} onchange="toggleDivergencia(true)" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" ${radioChecked(s2.carga_divergente, 'Não')} onchange="toggleDivergencia(false)" class="mr-2 h-4 w-4"> Não</label></div></div></div>
+                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4"><div><label class="text-sm font-medium text-gray-700">Produtos conferidos?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Sim" ${radioChecked(s2.produtos_conferidos, 'Sim')} class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Não" ${radioChecked(s2.produtos_conferidos, 'Não')} class="mr-2 h-4 w-4"> Não</label></div></div><div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" ${radioChecked(s2.carga_divergente, 'Sim')} onchange="toggleDivergencia(true)" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" ${radioChecked(s2.carga_divergente, 'Não') || 'checked'} onchange="toggleDivergencia(false)" class="mr-2 h-4 w-4"> Não</label></div></div></div>
+                     <!-- NOVO: Seção de sobra na edição -->
+                     <div class="border-t pt-4">
+                        <label class="text-sm font-medium text-gray-700">Tem sobra?</label>
+                        <div class="flex space-x-6 mt-2">
+                            <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Sim" ${radioChecked(s2.tem_sobra, 'Sim')} onchange="toggleSobra(true)" class="mr-2 h-4 w-4"> Sim</label>
+                            <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Não" ${radioChecked(s2.tem_sobra, 'Não') || 'checked'} onchange="toggleSobra(false)" class="mr-2 h-4 w-4"> Não</label>
+                        </div>
+                    </div>
+                    <div id="sobra-details" style="display: ${s2.tem_sobra === 'Sim' ? 'block' : 'none'}" class="space-y-4 border-t pt-4">
+                        ${createSobraInputsHTML('sobra-container', s2.sobras, 'Detalhes da Sobra')}
+                    </div>
                      <div id="divergencia-details" style="display: ${s2.carga_divergente === 'Sim' ? 'block' : 'none'}" class="space-y-4 border-t pt-4">
-                        ${createDivergenciaInputsHTML('divergencia-tipo-dev_total', s2.divergencia_dev_total, 'Detalhes Divergência (Dev. Total)')}
-                        ${createDivergenciaInputsHTML('divergencia-tipo-dev_parcial', s2.divergencia_dev_parcial, 'Detalhes Divergência (Dev. Parcial)')}
-                        ${createDivergenciaInputsHTML('divergencia-tipo-falta', s2.divergencia_falta, 'Detalhes Divergência (Falta)')}
-                        ${createDivergenciaInputsHTML('divergencia-tipo-retira_oc', s2.divergencia_retira_oc, 'Detalhes Divergência (Retira O.C)')}
+                         ${createDivergenciaInputsHTML('divergencia-tipo-dev_total', s2.divergencia_dev_total, 'Detalhes Divergência (Dev. Total)')}
+                         ${createDivergenciaInputsHTML('divergencia-tipo-dev_parcial', s2.divergencia_dev_parcial, 'Detalhes Divergência (Dev. Parcial)')}
+                         ${createDivergenciaInputsHTML('divergencia-tipo-falta', s2.divergencia_falta, 'Detalhes Divergência (Falta)')}
+                         ${createDivergenciaInputsHTML('divergencia-tipo-retira_oc', s2.divergencia_retira_oc, 'Detalhes Divergência (Retira O.C)')}
                      </div>
                 </fieldset>
 
@@ -1145,6 +1331,8 @@
                 chapatex: document.getElementById('s2-qtd_chapatex').value,
                 produtos_conferidos: document.querySelector('input[name="s2-produtos_conferidos"]:checked')?.value || '',
                 carga_divergente: document.querySelector('input[name="s2-carga_divergente"]:checked')?.value || '',
+                tem_sobra: document.querySelector('input[name="s2-tem_sobra"]:checked')?.value || '',
+                sobras: getSobraInputValues('sobra-container'),
                 divergencia_dev_total: getDivergenciaInputValues('divergencia-tipo-dev_total'),
                 divergencia_dev_parcial: getDivergenciaInputValues('divergencia-tipo-dev_parcial'),
                 divergencia_falta: getDivergenciaInputValues('divergencia-tipo-falta'),
@@ -1201,22 +1389,26 @@
         try {
             const busca = document.getElementById('filtro-busca').value.toLowerCase();
             const status = document.getElementById('filtro-status').value;
-            const data = document.getElementById('filtro-data').value;
+            const dataInicio = document.getElementById('filtro-data-inicio').value;
+            const dataFim = document.getElementById('filtro-data-fim').value;
 
-            if (busca || status || data) {
+            if (busca || status || dataInicio || dataFim) {
                  const filteredData = allChecklists.filter(item => {
                     const matchBusca = !busca || (item.secao1 && item.secao1.carga && item.secao1.carga.toLowerCase().includes(busca));
                     const matchStatus = !status || item.status === status;
                     let matchData = true;
-                    if (data && item.createdAt) {
+                    if ((dataInicio || dataFim) && item.createdAt) {
                         const itemDate = item.createdAt.toDate();
-                        const year = itemDate.getUTCFullYear();
-                        const month = String(itemDate.getUTCMonth() + 1).padStart(2, '0');
-                        const day = String(itemDate.getUTCDate()).padStart(2, '0');
-                        const itemDateString = `${year}-${month}-${day}`;
-                        matchData = itemDateString === data;
-                    } else if (data && !item.createdAt) {
-                        matchData = false;
+                        itemDate.setHours(0, 0, 0, 0); // Normaliza a data do item
+
+                        if (dataInicio && itemDate < new Date(dataInicio + 'T00:00:00')) {
+                            matchData = false;
+                        }
+                        if (dataFim && itemDate > new Date(dataFim + 'T00:00:00')) {
+                            matchData = false;
+                        }
+                    } else if ((dataInicio || dataFim) && !item.createdAt) {
+                         matchData = false;
                     }
                     return matchBusca && matchStatus && matchData;
                 });
@@ -1278,7 +1470,8 @@
     document.getElementById('next-page-btn').addEventListener('click', nextPage);
     document.getElementById('filtro-busca').addEventListener('input', () => fetchChecklistsPage(1, true));
     document.getElementById('filtro-status').addEventListener('change',() => fetchChecklistsPage(1, true));
-    document.getElementById('filtro-data').addEventListener('change',() => fetchChecklistsPage(1, true));
+    document.getElementById('filtro-data-inicio').addEventListener('change',() => fetchChecklistsPage(1, true));
+    document.getElementById('filtro-data-fim').addEventListener('change',() => fetchChecklistsPage(1, true));
 
 
     function exportarExcel() {
@@ -1289,6 +1482,9 @@
             const secao2 = item.secao2 || {};
             const secao3 = item.secao3 || {};
             const formatDivergencia = (data) => (data || []).map(d => `NF:${d.nf},Prod:${d.produto},Qtd:${d.qtd}`).join('; ');
+            // <-- NOVO --> Formatação da sobra para o Excel
+            const formatSobra = (data) => (data || []).map(d => `Prod:${d.produto},Qtd:${d.qtd}`).join('; ');
+
             return {
                 'Data': item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString('pt-BR') : '',
                 'Carga': secao1.carga, 'Veículo': secao1.veiculo,
@@ -1300,6 +1496,8 @@
                 'Cartão Combustível': secao1.cartao_combustivel, 'Celular': secao1.celular, 'Carregador': secao1.carregador,
                 'Qtd Caçamba': secao2.cacamba, 'Qtd Gaiola': secao2.gaiola, 'Qtd Palete': secao2.palete, 'Qtd Chapatex': secao2.chapatex,
                 'Produtos Conferidos?': secao2.produtos_conferidos, 'Carga Divergente?': secao2.carga_divergente,
+                'Tem Sobra?': secao2.tem_sobra, // <-- NOVO -->
+                'Detalhes Sobra': formatSobra(secao2.sobras), // <-- NOVO -->
                 'Divergência Dev Total': formatDivergencia(secao2.divergencia_dev_total),
                 'Divergência Dev Parcial': formatDivergencia(secao2.divergencia_dev_parcial),
                 'Divergência Falta': formatDivergencia(secao2.divergencia_falta),
@@ -1324,7 +1522,7 @@
     </script>
     <script>
     // ===============================================================
-    //                  LÓGICAS DO CHECKLIST DE FROTA
+    //                 LÓGICAS DO CHECKLIST DE FROTA
     // ===============================================================
 
     // --- RENDERIZAÇÃO E PAGINAÇÃO ---
@@ -1332,7 +1530,7 @@
         const tabelaBody = document.getElementById('tabela-checklists-frota');
         tabelaBody.innerHTML = '';
         if (dados.length === 0) {
-            tabelaBody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-gray-500">Nenhum checklist de frota encontrado.</td></tr>`;
+            tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-gray-500">Nenhum checklist de frota encontrado.</td></tr>`;
             return;
         }
 
@@ -1343,6 +1541,7 @@
             let masterActions = '';
             if (isMaster) {
                 masterActions = `
+                    <button onclick="iniciarEdicaoFrota('${item.id}')" class="font-medium text-blue-600 hover:underline text-xs ml-3">Editar</button>
                     <button onclick="abrirModalConfirmacaoExclusao('${item.id}', 'frota')" class="font-medium text-red-600 hover:underline text-xs ml-3">Excluir</button>
                 `;
             }
@@ -1356,6 +1555,7 @@
             tr.innerHTML = `
                 <td class="py-2 px-2 sm:py-3 sm:px-4">${dataFormatada}</td>
                 <td class="py-2 px-2 sm:py-3 sm:px-4 font-medium text-gray-900">${item.placa}</td>
+                <td class="py-2 px-2 sm:py-3 sm:px-4">${item.carga || 'N/A'}</td>
                 <td class="py-2 px-2 sm:py-3 sm:px-4">${item.motorista}</td>
                 <td class="py-2 px-2 sm:py-3 sm:px-4">${item.criadoPor || 'N/A'}</td>
                 <td class="py-2 px-2 sm:py-3 sm:px-4">${statusBadge}</td>
@@ -1379,17 +1579,20 @@
         currentPageFrota = page;
 
         const tabelaBody = document.getElementById('tabela-checklists-frota');
-        tabelaBody.innerHTML = `<tr><td colspan="6" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Carregando dados...</div></td></tr>`;
+        tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Carregando dados...</div></td></tr>`;
         
         try {
-            const buscaPlaca = document.getElementById('filtro-busca-frota').value.toLowerCase();
-            const dataFiltro = document.getElementById('filtro-data-frota').value;
+            const buscaFrota = document.getElementById('filtro-busca-frota').value.toLowerCase();
+            const dataInicioFrota = document.getElementById('filtro-data-inicio-frota').value;
+            const dataFimFrota = document.getElementById('filtro-data-fim-frota').value;
 
-            if (buscaPlaca || dataFiltro) {
+            if (buscaFrota || dataInicioFrota || dataFimFrota) {
                 const filteredData = allChecklistsFrota.filter(item => {
-                    const matchPlaca = !buscaPlaca || (item.placa && item.placa.toLowerCase().includes(buscaPlaca));
-                    const matchData = !dataFiltro || item.data === dataFiltro;
-                    return matchPlaca && matchData;
+                    const matchBusca = !buscaFrota || 
+                        (item.placa && item.placa.toLowerCase().includes(buscaFrota)) ||
+                        (item.carga && item.carga.toLowerCase().includes(buscaFrota));
+                    const matchData = (!dataInicioFrota || item.data >= dataInicioFrota) && (!dataFimFrota || item.data <= dataFimFrota);
+                    return matchBusca && matchData;
                 });
                 renderizarTabelaFrota(filteredData);
                 document.getElementById('pagination-controls-frota').style.display = 'none';
@@ -1418,7 +1621,7 @@
 
         } catch (error) {
             console.error("Erro ao buscar checklists de frota: ", error);
-            tabelaBody.innerHTML = `<tr><td colspan="6" class="text-center py-10 text-red-500">Erro ao carregar os dados.</td></tr>`;
+            tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-red-500">Erro ao carregar os dados.</td></tr>`;
         }
     }
 
@@ -1431,7 +1634,8 @@
     document.getElementById('prev-page-btn-frota').addEventListener('click', () => { if(currentPageFrota > 1) fetchChecklistsPageFrota(currentPageFrota - 1) });
     document.getElementById('next-page-btn-frota').addEventListener('click', () => { if(lastFetchedPageSizeFrota >= ITEMS_PER_PAGE) fetchChecklistsPageFrota(currentPageFrota + 1) });
     document.getElementById('filtro-busca-frota').addEventListener('input', () => fetchChecklistsPageFrota(1, true));
-    document.getElementById('filtro-data-frota').addEventListener('change', () => fetchChecklistsPageFrota(1, true));
+    document.getElementById('filtro-data-inicio-frota').addEventListener('change', () => fetchChecklistsPageFrota(1, true));
+    document.getElementById('filtro-data-fim-frota').addEventListener('change', () => fetchChecklistsPageFrota(1, true));
 
 
     // --- FORMULÁRIO E SALVAMENTO ---
@@ -1497,6 +1701,7 @@
                     <div><label for="frota-placa" class="text-sm font-medium text-gray-700">Placa</label><input type="text" id="frota-placa" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
                     <div><label for="frota-caminhao" class="text-sm font-medium text-gray-700">Caminhão</label><input type="text" id="frota-caminhao" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
                     <div><label for="frota-motorista" class="text-sm font-medium text-gray-700">Motorista</label><input type="text" id="frota-motorista" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div class="md:col-span-2"><label for="frota-carga" class="text-sm font-medium text-gray-700">Número da Carga (Opcional)</label><input type="text" id="frota-carga" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
                 </div>
 
                 ${itemsHTML}
@@ -1506,6 +1711,11 @@
                     <textarea id="frota-obs-gerais" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></textarea>
                  </div>
                  
+                 <div class="border-t pt-4 mt-6">
+                    <label for="frota-conferente" class="text-sm font-medium text-gray-700">Nome do Conferente</label>
+                    <input type="text" id="frota-conferente" required placeholder="Digite seu nome completo" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                 </div>
+
                 <button type="button" onclick="salvarChecklistFrota()" class="mt-6 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar Checklist de Frota</button>
             </form>
         `;
@@ -1519,18 +1729,20 @@
             data: document.getElementById('frota-data').value,
             caminhao: document.getElementById('frota-caminhao').value,
             placa: document.getElementById('frota-placa').value,
+            carga: document.getElementById('frota-carga').value,
             motorista: document.getElementById('frota-motorista').value,
             observacoes_gerais: document.getElementById('frota-obs-gerais').value,
+            conferente: document.getElementById('frota-conferente').value,
             itens: {}
         };
 
         let formValido = true;
-        ['data', 'caminhao', 'placa', 'motorista'].forEach(field => {
+        ['data', 'caminhao', 'placa', 'motorista', 'conferente'].forEach(field => {
             if (!data[field]) formValido = false;
         });
 
         if (!formValido) {
-            showToast('Por favor, preencha todos os campos do cabeçalho.', 'error');
+            showToast('Por favor, preencha todos os campos obrigatórios, incluindo o Nome do Conferente.', 'error');
             return;
         }
 
@@ -1559,6 +1771,122 @@
                 showToast('Erro ao salvar o checklist.', 'error');
             });
     }
+
+    function iniciarEdicaoFrota(id) {
+        currentEditingId = id;
+        const item = allChecklistsFrota.find(c => c.id === id);
+        if (!item) {
+            showToast('Checklist de frota não encontrado.', 'error');
+            return;
+        }
+
+        const formContainer = document.getElementById('form-container-frota');
+        let itemsHTML = '';
+        const sections = [...new Set(frotaItems.map(item => item.section))];
+
+        const radioChecked = (value, expected) => value === expected ? 'checked' : '';
+
+        sections.forEach(section => {
+            itemsHTML += `<h3 class="font-semibold text-gray-800 border-b pb-2 mt-6">${section}</h3>`;
+            itemsHTML += '<div class="space-y-4 mt-4">';
+            frotaItems.filter(i => i.section === section).forEach(spec => {
+                const itemData = item.itens[spec.id] || {};
+                const obs = itemData.obs || '';
+                itemsHTML += `
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                        <label class="text-sm font-medium text-gray-800">${spec.label}</label>
+                        <div class="mt-2 flex items-center space-x-6">
+                            <label class="flex items-center"><input type="radio" name="${spec.id}" value="Conforme" ${radioChecked(itemData.status, 'Conforme')} class="mr-2 h-4 w-4"> Conforme</label>
+                            <label class="flex items-center"><input type="radio" name="${spec.id}" value="Não Conforme" ${radioChecked(itemData.status, 'Não Conforme')} class="mr-2 h-4 w-4"> Não Conforme</label>
+                        </div>
+                        <div class="mt-2">
+                            <input type="text" id="${spec.id}_obs" value="${obs}" placeholder="Observação (se não conforme)" class="w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm">
+                        </div>
+                    </div>
+                `;
+            });
+            itemsHTML += '</div>';
+        });
+
+        formContainer.innerHTML = `
+            <div class="flex justify-between items-start mb-4">
+                <h2 class="text-xl font-bold text-gray-800">Editando Checklist de Frota - Placa ${item.placa}</h2>
+                <button onclick="navigateTo('view-dashboard-frota', 'frota')" class="text-sm text-gray-600 hover:text-gray-900">&larr; Voltar ao Painel</button>
+            </div>
+            <form id="checklist-form-frota-edit">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div><label for="frota-data" class="text-sm font-medium text-gray-700">Data</label><input type="date" id="frota-data" value="${item.data || ''}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div><label for="frota-placa" class="text-sm font-medium text-gray-700">Placa</label><input type="text" id="frota-placa" value="${item.placa || ''}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div><label for="frota-caminhao" class="text-sm font-medium text-gray-700">Caminhão</label><input type="text" id="frota-caminhao" value="${item.caminhao || ''}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div><label for="frota-motorista" class="text-sm font-medium text-gray-700">Motorista</label><input type="text" id="frota-motorista" value="${item.motorista || ''}" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div class="md:col-span-2"><label for="frota-carga" class="text-sm font-medium text-gray-700">Número da Carga (Opcional)</label><input type="text" id="frota-carga" value="${item.carga || ''}" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                </div>
+                ${itemsHTML}
+                 <div class="border-t pt-4 mt-6">
+                    <label class="text-sm font-medium text-gray-700">Observações Gerais</label>
+                    <textarea id="frota-obs-gerais" rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">${item.observacoes_gerais || ''}</textarea>
+                 </div>
+                <div class="border-t pt-4 mt-6">
+                    <label for="frota-conferente" class="text-sm font-medium text-gray-700">Nome do Conferente</label>
+                    <input type="text" id="frota-conferente" value="${item.conferente || ''}" required placeholder="Digite seu nome completo" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">
+                 </div>
+                <button type="button" onclick="salvarEdicaoFrota('${id}')" class="mt-6 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors shadow">Salvar Alterações</button>
+            </form>
+        `;
+        navigateTo('view-form-frota', 'frota');
+    }
+
+    function salvarEdicaoFrota(id) {
+        if (!id) return;
+
+        const data = {
+            lastEditedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            lastEditedBy: currentUser.name,
+            data: document.getElementById('frota-data').value,
+            caminhao: document.getElementById('frota-caminhao').value,
+            placa: document.getElementById('frota-placa').value,
+            carga: document.getElementById('frota-carga').value,
+            motorista: document.getElementById('frota-motorista').value,
+            observacoes_gerais: document.getElementById('frota-obs-gerais').value,
+            conferente: document.getElementById('frota-conferente').value,
+            itens: {}
+        };
+
+        let formValido = true;
+        ['data', 'caminhao', 'placa', 'motorista', 'conferente'].forEach(field => {
+            if (!data[field]) formValido = false;
+        });
+
+        if (!formValido) {
+            showToast('Por favor, preencha todos os campos obrigatórios, incluindo o Nome do Conferente.', 'error');
+            return;
+        }
+
+        let overallStatus = 'Conforme';
+        frotaItems.forEach(item => {
+            const itemStatus = document.querySelector(`input[name="${item.id}"]:checked`)?.value || 'Não preenchido';
+            data.itens[item.id] = {
+                status: itemStatus,
+                obs: document.getElementById(`${item.id}_obs`).value
+            };
+            if (itemStatus === 'Não Conforme') {
+                overallStatus = 'Não Conforme';
+            }
+        });
+        data.status = overallStatus;
+
+        checklistsFrotaCollection.doc(id).update(data)
+            .then(() => {
+                showToast('Checklist de frota atualizado com sucesso!');
+                navigateTo('view-dashboard-frota', 'frota');
+                fetchChecklistsPageFrota(1, true); 
+            })
+            .catch(error => {
+                console.error("Erro ao atualizar checklist de frota: ", error);
+                showToast('Erro ao salvar as alterações.', 'error');
+            });
+    }
+
 
     function abrirModalFrota(id) {
         const item = allChecklistsFrota.find(c => c.id === id);
@@ -1596,12 +1924,14 @@
                             <p><strong>Data:</strong> ${dataFormatada}</p>
                             <p><strong>Caminhão:</strong> ${item.caminhao}</p>
                             <p><strong>Placa:</strong> ${item.placa}</p>
+                            <p><strong>Nº Carga:</strong> ${item.carga || 'N/A'}</p>
                             <p><strong>Motorista:</strong> ${item.motorista}</p>
                             <p><strong>Criado por:</strong> ${item.criadoPor || 'N/A'}</p>
-                            <p><strong>Status Geral:</strong> ${statusBadge}</p>
+                            <p><strong>Conferente Frota:</strong> ${item.conferente || 'N/A'}</p>
+                            <p class="md:col-span-2"><strong>Status Geral:</strong> ${statusBadge}</p>
                         </div>
                         <div class="hidden md:grid grid-cols-3 gap-4 font-bold bg-gray-100 p-2 rounded-t-lg">
-                           <span>Componente</span><span>Status</span><span>Observação</span>
+                            <span>Componente</span><span>Status</span><span>Observação</span>
                         </div>
                         ${itemsHTML}
                          <div class="border-t pt-4 mt-4">
@@ -1626,9 +1956,11 @@
             const baseData = {
                 'Data': item.data ? new Date(item.data + 'T00:00:00').toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : '',
                 'Placa': item.placa,
+                'Carga': item.carga || '',
                 'Status': item.status || '',
                 'Motorista': item.motorista,
                 'Caminhão': item.caminhao,
+                'Conferente Frota': item.conferente || '',
                 'Observações Gerais': item.observacoes_gerais,
                 'Criado Por': item.criadoPor,
             };
@@ -1663,3 +1995,4 @@
     </script>
 </body>
 </html>
+
