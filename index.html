@@ -7,7 +7,7 @@
     <meta name="theme-color" content="#3b82f6">
     <title>Rio Quality - Checklist</title>
     <link rel="manifest" href="manifest.json">
-    <link rel="apple-touch-icon" href="images/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/3b82f6/FFFFFF?text=RQ">
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -23,6 +23,7 @@
         body { font-family: 'Inter', sans-serif; }
         .status-aguardando-conferencia { background-color: #FEF9C3; color: #CA8A04; }
         .status-aguardando-admin { background-color: #DBEAFE; color: #1e86af; }
+        .status-em-tratamento { background-color: #FFE0B2; color: #E65100; }
         .status-concluido { background-color: #D1FAE5; color: #065F46; }
         .status-conforme { background-color: #D1FAE5; color: #065F46; }
         .status-nao-conforme { background-color: #FEE2E2; color: #991B1B; }
@@ -120,10 +121,11 @@
                     <div id="view-dashboard" class="view active">
                         <main class="p-4 md:p-6">
                              <!-- Cards de Estatísticas -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-6">
                                 <div class="bg-blue-500 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Total</h3><p id="stats-total" class="text-3xl font-bold mt-2">0</p></div>
                                 <div class="bg-yellow-500 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Aguardando Conferência</h3><p id="stats-aguardando-conferencia" class="text-3xl font-bold mt-2">0</p></div>
                                 <div class="bg-cyan-500 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Aguardando Admin</h3><p id="stats-aguardando-admin" class="text-3xl font-bold mt-2">0</p></div>
+                                <div class="bg-orange-400 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Em Tratamento</h3><p id="stats-em-tratamento" class="text-3xl font-bold mt-2">0</p></div>
                                 <div class="bg-green-500 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Concluídos</h3><p id="stats-concluido" class="text-3xl font-bold mt-2">0</p></div>
                             </div>
 
@@ -148,6 +150,7 @@
                                         <option value="">Todos os Status</option>
                                         <option value="Aguardando Conferência">Aguardando Conferência</option>
                                         <option value="Aguardando Admin">Aguardando Admin</option>
+                                        <option value="Em Tratamento">Em Tratamento</option>
                                         <option value="Concluído">Concluído</option>
                                     </select>
                                  </div>
@@ -441,7 +444,12 @@
     }
     
     // --- NAVEGAÇÃO E CONTROLES DE UI ---
-    const statusClasses = { 'Aguardando Conferência': 'status-aguardando-conferencia', 'Aguardando Admin': 'status-aguardando-admin', 'Concluído': 'status-concluido' };
+    const statusClasses = { 
+        'Aguardando Conferência': 'status-aguardando-conferencia', 
+        'Aguardando Admin': 'status-aguardando-admin', 
+        'Em Tratamento': 'status-em-tratamento',
+        'Concluído': 'status-concluido' 
+    };
     
     function showAppSection(sectionName) {
         document.querySelectorAll('.app-section').forEach(section => section.classList.remove('active'));
@@ -467,7 +475,6 @@
         }
     }
 
-    // <-- NOVO --> Função para mostrar/ocultar detalhes da sobra
     function toggleSobra(show) {
         const detailsDiv = document.getElementById('sobra-details');
         if (detailsDiv) {
@@ -491,8 +498,12 @@
             const canFinalizar = currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Master');
             const isMaster = currentUser && currentUser.role === 'Master';
 
-            if (item.status === 'Aguardando Conferência' && canConferir) { actionButton = `<button onclick="iniciarEtapa(2, '${item.id}')" class="bg-yellow-400 text-yellow-800 px-3 py-1 rounded-full font-semibold text-xs hover:bg-yellow-500">Conferir</button>`; } 
-            else if (item.status === 'Aguardando Admin' && canFinalizar) { actionButton = `<button onclick="iniciarEtapa(3, '${item.id}')" class="bg-blue-400 text-blue-800 px-3 py-1 rounded-full font-semibold text-xs hover:bg-blue-500">Finalizar</button>`; }
+            if (item.status === 'Aguardando Conferência' && canConferir) { 
+                actionButton = `<button onclick="iniciarEtapa(2, '${item.id}')" class="bg-yellow-400 text-yellow-800 px-3 py-1 rounded-full font-semibold text-xs hover:bg-yellow-500">Conferir</button>`; 
+            } 
+            else if ((item.status === 'Aguardando Admin' || item.status === 'Em Tratamento') && canFinalizar) { 
+                actionButton = `<button onclick="iniciarEtapa(3, '${item.id}')" class="bg-blue-400 text-blue-800 px-3 py-1 rounded-full font-semibold text-xs hover:bg-blue-500">Finalizar</button>`; 
+            }
 
             let masterActions = '';
             if(isMaster) {
@@ -600,7 +611,6 @@
         container.appendChild(newRow);
     }
     
-    // <-- NOVO --> Função para adicionar campos de sobra
     function addSobraInput(containerId) {
         const container = document.getElementById(containerId);
         const newRow = document.createElement('div');
@@ -715,7 +725,6 @@
                 });
             }
             
-            // <-- NOVO --> Lógica para exibir sobras no resumo
             let sobrasHTML = '';
             if (secao2.tem_sobra === 'Sim' && secao2.sobras && secao2.sobras.length > 0) {
                 sobrasHTML += `<h5 class="font-semibold mt-1">Sobras:</h5>`;
@@ -740,7 +749,6 @@
                         <p><strong>Produtos Conferidos:</strong> ${secao2.produtos_conferidos || 'Pendente'}</p>
                         <p><strong>Carga Divergente:</strong> ${secao2.carga_divergente || 'Pendente'}</p>
                         <div class="mt-1 pl-4">${divergenciasHTML || ''}</div>
-                        <!-- NOVO: Exibição da sobra -->
                         <p class="mt-2"><strong>Tem Sobra:</strong> ${secao2.tem_sobra || 'Pendente'}</p>
                         <div class="mt-1 pl-4">${sobrasHTML || ''}</div>
                     </div>
@@ -808,7 +816,6 @@
                         <div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" class="mr-2 h-4 w-4" onchange="toggleDivergencia(true)"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" class="mr-2 h-4 w-4" onchange="toggleDivergencia(false)" checked> Não</label></div></div>
                     </div>
                     
-                    <!-- NOVO: Seção de Sobra -->
                     <div class="border-t pt-4">
                         <label class="text-sm font-medium text-gray-700">Tem sobra?</label>
                         <div class="flex space-x-6 mt-2">
@@ -892,11 +899,9 @@
         }).filter(item => item !== null);
     }
     
-    // <-- NOVO --> Função para obter valores dos campos de sobra
     function getSobraInputValues(containerId) {
         const container = document.getElementById(containerId);
         if (!container) return [];
-        // Mapeia cada linha de produto/qtd
         return Array.from(container.querySelectorAll('.grid.items-center')).map(row => {
             const produto = row.querySelector('.produto')?.value || '';
             const qtd = row.querySelector('.qtd')?.value || '';
@@ -911,6 +916,15 @@
     function salvarEtapa1() {
         const cargaInput = document.getElementById('s1-numero_carga');
         if(!cargaInput || !cargaInput.value) { showToast('Número da carga é obrigatório.', 'error'); return; }
+
+        const cartaoCombustivel = document.querySelector('input[name="s1-cartao_combustivel"]:checked');
+        const celular = document.querySelector('input[name="s1-celular"]:checked');
+        const carregador = document.querySelector('input[name="s1-carregador"]:checked');
+
+        if (!cartaoCombustivel || !celular || !carregador) {
+            showToast('Por favor, marque todas as opções (Cartão, Celular, Carregador).', 'error');
+            return;
+        }
 
         const novoChecklist = {
             createdAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -929,9 +943,9 @@
                 dev_total: getDynamicInputValues('s1-dev_total_container'),
                 dev_parcial: getDynamicInputValues('s1-dev_parcial_container'),
                 retira_oc: getDynamicInputValues('s1-retira_oc_container'),
-                cartao_combustivel: document.querySelector('input[name="s1-cartao_combustivel"]:checked')?.value || '',
-                celular: document.querySelector('input[name="s1-celular"]:checked')?.value || '',
-                carregador: document.querySelector('input[name="s1-carregador"]:checked')?.value || '',
+                cartao_combustivel: cartaoCombustivel.value,
+                celular: celular.value,
+                carregador: carregador.value,
             },
             secao2: {},
             secao3: {}
@@ -941,7 +955,7 @@
             .then(() => {
                 showToast('Checklist criado com sucesso!');
                 navigateTo('view-dashboard', 'retorno');
-                fetchChecklistsPage(1, true); // Recarrega a primeira página
+                fetchChecklistsPage(1, true); 
             })
             .catch(error => {
                 console.error("Erro ao adicionar: ", error);
@@ -962,10 +976,8 @@
                 chapatex: document.getElementById('s2-qtd_chapatex').value,
                 produtos_conferidos: document.querySelector('input[name="s2-produtos_conferidos"]:checked')?.value || '',
                 carga_divergente: document.querySelector('input[name="s2-carga_divergente"]:checked')?.value || '',
-                // <-- NOVO --> Salvando dados de sobra
                 tem_sobra: document.querySelector('input[name="s2-tem_sobra"]:checked')?.value || '',
                 sobras: getSobraInputValues('sobra-container'),
-                // Fim da adição
                 divergencia_dev_total: getDivergenciaInputValues('divergencia-tipo-dev_total'),
                 divergencia_dev_parcial: getDivergenciaInputValues('divergencia-tipo-dev_parcial'),
                 divergencia_falta: getDivergenciaInputValues('divergencia-tipo-falta'),
@@ -976,7 +988,7 @@
             .then(() => {
                 showToast('Etapa 2 salva com sucesso!');
                 navigateTo('view-dashboard', 'retorno');
-                fetchChecklistsPage(currentPage); // Recarrega a página atual
+                fetchChecklistsPage(currentPage); 
             })
             .catch(error => {
                 console.error("Erro ao atualizar: ", error)
@@ -987,16 +999,30 @@
     function salvarEtapa3() {
         if (!currentEditingId) return;
         if(!document.getElementById('s3-responsavel').value) { showToast('Responsável é obrigatório.', 'error'); return; }
+        
+        const tratativa1_status = document.querySelector('input[name="tratativa1_status"]:checked')?.value;
+        const tratativa2_status = document.querySelector('input[name="tratativa2_status"]:checked')?.value;
+
+        if (!tratativa1_status || !tratativa2_status) {
+            showToast('Por favor, marque o status para todas as tratativas.', 'error');
+            return;
+        }
+
+        let finalStatus = 'Concluído';
+        if (tratativa1_status === 'Em tratamento' || tratativa2_status === 'Em tratamento') {
+            finalStatus = 'Em Tratamento';
+        }
+
         const dataToUpdate = {
-            status: 'Concluído',
+            status: finalStatus,
             finalizadoPor: currentUser.name,
             secao3: {
                 motorista: document.getElementById('s3-motorista').value,
                 ajudante1: document.getElementById('s3-ajudante1').value,
                 ajudante2: document.getElementById('s3-ajudante2').value,
-                tratativa1_status: document.querySelector('input[name="tratativa1_status"]:checked')?.value || '',
+                tratativa1_status: tratativa1_status,
                 tratativa1_obs: document.getElementById('tratativa1_obs').value,
-                tratativa2_status: document.querySelector('input[name="tratativa2_status"]:checked')?.value || '',
+                tratativa2_status: tratativa2_status,
                 tratativa2_obs: document.getElementById('tratativa2_obs').value,
                 obs_arrumacao: document.getElementById('s3-obs_arrumacao').value,
                 obs_fusion: document.getElementById('s3-obs_fusion').value,
@@ -1009,9 +1035,9 @@
         };
         checklistsCollection.doc(currentEditingId).set(dataToUpdate, { merge: true })
             .then(() => {
-                showToast('Checklist concluído com sucesso!');
+                showToast('Checklist finalizado com sucesso!');
                 navigateTo('view-dashboard', 'retorno');
-                fetchChecklistsPage(currentPage); // Recarrega a página atual
+                fetchChecklistsPage(currentPage); 
             })
             .catch(error => {
                 console.error("Erro ao finalizar: ", error);
@@ -1048,7 +1074,6 @@
             });
         }
 
-        // <-- NOVO --> Lógica para exibir sobras no modal
         let sobrasHTML = '';
         if (secao2.tem_sobra === 'Sim' && secao2.sobras && secao2.sobras.length > 0) {
             sobrasHTML += `<h5 class="font-semibold mt-1">Sobras:</h5>`;
@@ -1057,7 +1082,6 @@
             });
         }
 
-        // <-- ALTERADO --> Lógica de permissão para visualizar a Seção 3
         let secao3HTML = '';
         if (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Master')) {
             secao3HTML = `
@@ -1195,7 +1219,6 @@
              return `<div id="${containerId}"><h4 class="text-sm font-semibold text-gray-600">${label}</h4>${inputsHTML}</div>`;
         };
         
-        // <-- NOVO --> Helper para inputs de sobra
         const createSobraInputsHTML = (containerId, values = [], label) => {
             let inputsHTML = (values.length > 0 ? values : [{produto: '', qtd: ''}]).map((sobra, index) => {
                 const isFirstAndOnly = values.length <= 1 && index === 0;
@@ -1252,7 +1275,6 @@
                     <h3 class="font-semibold text-gray-700 border-b pb-2">2 - Ativos / Produtos</h3>
                      <div class="pt-2"><label class="text-sm font-medium text-gray-700">Ativos retornados (quantidade):</label><div class="grid grid-cols-2 gap-x-4 gap-y-3 mt-2"><div><label for="s2-qtd_cacamba" class="text-xs text-gray-600">Caçamba</label><input type="number" id="s2-qtd_cacamba" value="${s2.cacamba || '0'}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div><div><label for="s2-qtd_gaiola" class="text-xs text-gray-600">Gaiola</label><input type="number" id="s2-qtd_gaiola" value="${s2.gaiola || '0'}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div><div><label for="s2-qtd_palete" class="text-xs text-gray-600">Palete</label><input type="number" id="s2-qtd_palete" value="${s2.palete || '0'}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div><div><label for="s2-qtd_chapatex" class="text-xs text-gray-600">Chapatex</label><input type="number" id="s2-qtd_chapatex" value="${s2.chapatex || '0'}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div></div></div>
                      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4"><div><label class="text-sm font-medium text-gray-700">Produtos conferidos?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Sim" ${radioChecked(s2.produtos_conferidos, 'Sim')} class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Não" ${radioChecked(s2.produtos_conferidos, 'Não')} class="mr-2 h-4 w-4"> Não</label></div></div><div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" ${radioChecked(s2.carga_divergente, 'Sim')} onchange="toggleDivergencia(true)" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" ${radioChecked(s2.carga_divergente, 'Não') || 'checked'} onchange="toggleDivergencia(false)" class="mr-2 h-4 w-4"> Não</label></div></div></div>
-                     <!-- NOVO: Seção de sobra na edição -->
                      <div class="border-t pt-4">
                         <label class="text-sm font-medium text-gray-700">Tem sobra?</label>
                         <div class="flex space-x-6 mt-2">
@@ -1310,6 +1332,15 @@
     function salvarEdicao(id) {
         if (!id) return;
 
+        const cartaoCombustivel = document.querySelector('input[name="s1-cartao_combustivel"]:checked');
+        const celular = document.querySelector('input[name="s1-celular"]:checked');
+        const carregador = document.querySelector('input[name="s1-carregador"]:checked');
+
+        if (!cartaoCombustivel || !celular || !carregador) {
+            showToast('Por favor, marque todas as opções (Cartão, Celular, Carregador).', 'error');
+            return;
+        }
+
         const dataToUpdate = {
             lastEditedAt: firebase.firestore.FieldValue.serverTimestamp(),
             lastEditedBy: currentUser.name,
@@ -1324,9 +1355,9 @@
                 dev_total: getDynamicInputValues('s1-dev_total_container'),
                 dev_parcial: getDynamicInputValues('s1-dev_parcial_container'),
                 retira_oc: getDynamicInputValues('s1-retira_oc_container'),
-                cartao_combustivel: document.querySelector('input[name="s1-cartao_combustivel"]:checked')?.value || '',
-                celular: document.querySelector('input[name="s1-celular"]:checked')?.value || '',
-                carregador: document.querySelector('input[name="s1-carregador"]:checked')?.value || '',
+                cartao_combustivel: cartaoCombustivel.value,
+                celular: celular.value,
+                carregador: carregador.value,
             },
             secao2: {
                 cacamba: document.getElementById('s2-qtd_cacamba').value,
@@ -1377,6 +1408,7 @@
         document.getElementById('stats-total').textContent = data.length;
         document.getElementById('stats-aguardando-conferencia').textContent = data.filter(c => c.status === 'Aguardando Conferência').length;
         document.getElementById('stats-aguardando-admin').textContent = data.filter(c => c.status === 'Aguardando Admin').length;
+        document.getElementById('stats-em-tratamento').textContent = data.filter(c => c.status === 'Em Tratamento').length;
         document.getElementById('stats-concluido').textContent = data.filter(c => c.status === 'Concluído').length;
     }
 
@@ -1486,7 +1518,6 @@
             const secao2 = item.secao2 || {};
             const secao3 = item.secao3 || {};
             const formatDivergencia = (data) => (data || []).map(d => `NF:${d.nf},Prod:${d.produto},Qtd:${d.qtd}`).join('; ');
-            // <-- NOVO --> Formatação da sobra para o Excel
             const formatSobra = (data) => (data || []).map(d => `Prod:${d.produto},Qtd:${d.qtd}`).join('; ');
 
             return {
@@ -1500,8 +1531,8 @@
                 'Cartão Combustível': secao1.cartao_combustivel, 'Celular': secao1.celular, 'Carregador': secao1.carregador,
                 'Qtd Caçamba': secao2.cacamba, 'Qtd Gaiola': secao2.gaiola, 'Qtd Palete': secao2.palete, 'Qtd Chapatex': secao2.chapatex,
                 'Produtos Conferidos?': secao2.produtos_conferidos, 'Carga Divergente?': secao2.carga_divergente,
-                'Tem Sobra?': secao2.tem_sobra, // <-- NOVO -->
-                'Detalhes Sobra': formatSobra(secao2.sobras), // <-- NOVO -->
+                'Tem Sobra?': secao2.tem_sobra, 
+                'Detalhes Sobra': formatSobra(secao2.sobras),
                 'Divergência Dev Total': formatDivergencia(secao2.divergencia_dev_total),
                 'Divergência Dev Parcial': formatDivergencia(secao2.divergencia_dev_parcial),
                 'Divergência Falta': formatDivergencia(secao2.divergencia_falta),
@@ -1996,10 +2027,9 @@
         XLSX.writeFile(workbook, "Relatorio_Checklists_Frota.xlsx");
     }
 
-    // <-- NOVO: Script para registrar o Service Worker -->
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js').then(registration => {
+            navigator.serviceWorker.register('sw.js').then(registration => {
                 console.log('ServiceWorker registrado com sucesso: ', registration.scope);
             }, function(err) {
                 console.log('Falha no registro do ServiceWorker: ', err);
