@@ -472,7 +472,44 @@
     // ===============================================================
     //                LÓGICA DE RENDERIZAÇÃO, FORMULÁRIOS E AÇÕES
     // ===============================================================
+    function showEmbalagemSuggestions(event) {
+    const input = event.target;
+    const suggestionsContainer = input.nextElementSibling;
+    const value = input.value.toLowerCase();
     
+    suggestionsContainer.innerHTML = '';
+    if (value.length === 0) {
+        suggestionsContainer.classList.add('hidden');
+        return;
+    }
+
+    const filteredEmbalagens = tiposEmbalagemList.filter(e => e.toLowerCase().includes(value));
+
+    if (filteredEmbalagens.length > 0) {
+        suggestionsContainer.classList.remove('hidden');
+        filteredEmbalagens.forEach(embalagem => {
+            const div = document.createElement('div');
+            div.className = 'autocomplete-suggestion';
+            div.textContent = embalagem;
+            div.onclick = () => {
+                input.value = embalagem;
+                suggestionsContainer.innerHTML = '';
+                suggestionsContainer.classList.add('hidden');
+            };
+            suggestionsContainer.appendChild(div);
+        });
+    } else {
+        suggestionsContainer.classList.add('hidden');
+    }
+}
+
+// Garante que a lista de sugestões feche se o usuário clicar fora
+document.addEventListener('click', (event) => {
+    const isAutocompleteInput = event.target.matches('.embalagem-input');
+    if (!isAutocompleteInput) {
+        document.querySelectorAll('.embalagem-suggestions').forEach(box => box.classList.add('hidden'));
+    }
+});
     // --- NOTIFICAÇÕES (TOAST) ---
     function showToast(message, type = 'success') {
         const container = document.getElementById('toast-container');
@@ -643,18 +680,18 @@ function renderizarTabela(dados) {
         container.appendChild(newInputGroup);
     }
     
- function addDivergenciaInput(containerId) {
+function addDivergenciaInput(containerId) {
     const container = document.getElementById(containerId);
     const newRow = document.createElement('div');
-    newRow.className = 'grid grid-cols-1 md:grid-cols-4 gap-2 items-center mt-2';
+    newRow.className = 'grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2';
     newRow.innerHTML = `
         <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-        
-        <div class="col-span-2">
-            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-            <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+        <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+        <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+        <div class="relative">
+            <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+            <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
         </div>
-
         <div class="flex items-center space-x-2">
             <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
             <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
@@ -662,15 +699,16 @@ function renderizarTabela(dados) {
     `;
     container.appendChild(newRow);
 }
-    
 function addSobraInput(containerId) {
     const container = document.getElementById(containerId);
     const newRow = document.createElement('div');
-    newRow.className = 'grid grid-cols-1 md:grid-cols-4 gap-2 items-center mt-2';
+    newRow.className = 'grid grid-cols-1 md:grid-cols-4 gap-2 items-start mt-2';
     newRow.innerHTML = `
-        <div class="col-span-2 md:col-span-3">
-            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-            <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+        <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+        <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+        <div class="relative">
+            <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+            <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
         </div>
         <div class="flex items-center space-x-2">
             <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
@@ -743,93 +781,49 @@ function iniciarEtapa(etapa, id) {
                     <span>Resumo Etapa 1: Documentos</span>
                     <span class="font-normal text-xs text-gray-500">Criado por: ${item.criadoPor || 'N/A'}</span>
                 </h4>
-                <p><strong>Data:</strong> ${dataFormatada}</p>
-                <p><strong>Veículo:</strong> ${secao1.veiculo || 'N/A'}</p>
-                <div class="mt-2 pt-2 border-t">
-                    <h5 class="font-semibold mb-1">Notas não Conforme:</h5>
-                    <p><strong>Falta N.F:</strong> ${(secao1.falta_nf || []).join(', ') || 'Nenhuma'}</p>
-                    <p><strong>Falta Assinatura:</strong> ${(secao1.falta_assinatura || []).join(', ') || 'Nenhuma'}</p>
-                    <p><strong>Foto Canhoto:</strong> ${(secao1.foto_canhoto || []).join(', ') || 'Nenhuma'}</p>
-                    <p><strong>Dev. Falta N.F:</strong> ${(secao1.dev_falta_nf || []).join(', ') || 'Nenhuma'}</p>
-                    <p><strong>Dev. Total:</strong> ${(secao1.dev_total || []).join(', ') || 'Nenhuma'}</p>
-                    <p><strong>Dev. Parcial:</strong> ${(secao1.dev_parcial || []).join(', ') || 'Nenhuma'}</p>
-                    <p><strong>Retira O.C:</strong> ${(secao1.retira_oc || []).join(', ') || 'Nenhuma'}</p>
-                </div>
-                <div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    <div><strong>Cartão Comb.:</strong> ${secao1.cartao_combustivel || 'N/A'}</div>
-                    <div><strong>Celular:</strong> ${secao1.celular || 'N/A'}</div>
-                    <div><strong>Carregador:</strong> ${secao1.carregador || 'N/A'}</div>
-                </div>
+                <p><strong>Data:</strong> ${dataFormatada}</p><p><strong>Veículo:</strong> ${secao1.veiculo || 'N/A'}</p>
+                <div class="mt-2 pt-2 border-t"><h5 class="font-semibold mb-1">Notas não Conforme:</h5><p><strong>Falta N.F:</strong> ${(secao1.falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Falta Assinatura:</strong> ${(secao1.falta_assinatura || []).join(', ') || 'Nenhuma'}</p><p><strong>Foto Canhoto:</strong> ${(secao1.foto_canhoto || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Falta N.F:</strong> ${(secao1.dev_falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Total:</strong> ${(secao1.dev_total || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Parcial:</strong> ${(secao1.dev_parcial || []).join(', ') || 'Nenhuma'}</p><p><strong>Retira O.C:</strong> ${(secao1.retira_oc || []).join(', ') || 'Nenhuma'}</p></div>
+                <div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-3 gap-2"><div><strong>Cartão Comb.:</strong> ${secao1.cartao_combustivel || 'N/A'}</div><div><strong>Celular:</strong> ${secao1.celular || 'N/A'}</div><div><strong>Carregador:</strong> ${secao1.carregador || 'N/A'}</div></div>
             </div>`;
     }
-
+    
     if (etapa >= 3) {
         let divergenciasHTML = '';
         if (secao2.carga_divergente === 'Sim') {
-            const tipos = [
-                {label: 'Dev. Total', data: secao2.divergencia_dev_total},
-                {label: 'Dev. Parcial', data: secao2.divergencia_dev_parcial},
-                {label: 'Falta', data: secao2.divergencia_falta},
-                {label: 'Retira O.C', data: secao2.divergencia_retira_oc},
-            ];
+            const tipos = [{label: 'Dev. Total', data: secao2.divergencia_dev_total},{label: 'Dev. Parcial', data: secao2.divergencia_dev_parcial},{label: 'Falta', data: secao2.divergencia_falta},{label: 'Retira O.C', data: secao2.divergencia_retira_oc}];
             tipos.forEach(tipo => {
                 if(tipo.data && tipo.data.length > 0) {
                     divergenciasHTML += `<h5 class="font-semibold mt-1">Divergência: ${tipo.label}</h5>`;
                     tipo.data.forEach(d => {
                         const desc = d.descricao ? `- ${d.descricao}` : '';
-                        divergenciasHTML += `<p class="pl-2">- NF: ${d.nf}, Prod: ${d.produto} ${desc}, Qtd: ${d.qtd}</p>`;
+                        const emb = d.embalagem ? `(Emb: ${d.embalagem})` : ''; // <-- Adicionado
+                        divergenciasHTML += `<p class="pl-2">- NF: ${d.nf}, Prod: ${d.produto} ${desc} ${emb}, Qtd: ${d.qtd}</p>`;
                     });
                 }
             });
         }
-
+        
         let sobrasHTML = '';
         if (secao2.tem_sobra === 'Sim' && secao2.sobras && secao2.sobras.length > 0) {
             sobrasHTML += `<h5 class="font-semibold mt-1">Sobras:</h5>`;
             secao2.sobras.forEach(s => {
                 const desc = s.descricao ? `- ${s.descricao}` : '';
-                sobrasHTML += `<p class="pl-2">- Prod: ${s.produto} ${desc}, Qtd: ${s.qtd}</p>`;
+                const emb = s.embalagem ? `(Emb: ${s.embalagem})` : ''; // <-- Adicionado
+                sobrasHTML += `<p class="pl-2">- Prod: ${s.produto} ${desc} ${emb}, Qtd: ${s.qtd}</p>`;
             });
         }
 
-        summaryHTML += `
-            <div class="p-3 bg-gray-100 rounded-lg text-sm mt-2">
-                <h4 class="font-bold mb-2 text-base flex justify-between items-center">
-                    <span>Resumo Etapa 2: Ativos / Produtos</span>
-                    <span class="font-normal text-xs text-gray-500">Conferido por: ${item.conferidoPor || 'Pendente'}</span>
-                </h4>
-                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    <div><strong>Caçamba:</strong> ${secao2.cacamba !== undefined ? secao2.cacamba : 'Pendente'}</div>
-                    <div><strong>Gaiola:</strong> ${secao2.gaiola !== undefined ? secao2.gaiola : 'Pendente'}</div>
-                    <div><strong>Palete:</strong> ${secao2.palete !== undefined ? secao2.palete : 'Pendente'}</div>
-                    <div><strong>Chapatex:</strong> ${secao2.chapatex !== undefined ? secao2.chapatex : 'Pendente'}</div>
-                </div>
-                <div class="mt-2 pt-2 border-t">
-                    <p><strong>Produtos Conferidos:</strong> ${secao2.produtos_conferidos || 'Pendente'}</p>
-                    <p><strong>Carga Divergente:</strong> ${secao2.carga_divergente || 'Pendente'}</p>
-                    <div class="mt-1 pl-4">${divergenciasHTML || ''}</div>
-                    <p class="mt-2"><strong>Tem Sobra:</strong> ${secao2.tem_sobra || 'Pendente'}</p>
-                    <div class="mt-1 pl-4">${sobrasHTML || ''}</div>
-                </div>
-            </div>`;
+        summaryHTML += `<div class="p-3 bg-gray-100 rounded-lg text-sm mt-2"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Resumo Etapa 2: Ativos / Produtos</span><span class="font-normal text-xs text-gray-500">Conferido por: ${item.conferidoPor || 'Pendente'}</span></h4><div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><div><strong>Caçamba:</strong> ${secao2.cacamba !== undefined ? secao2.cacamba : 'Pendente'}</div><div><strong>Gaiola:</strong> ${secao2.gaiola !== undefined ? secao2.gaiola : 'Pendente'}</div><div><strong>Palete:</strong> ${secao2.palete !== undefined ? secao2.palete : 'Pendente'}</div><div><strong>Chapatex:</strong> ${secao2.chapatex !== undefined ? secao2.chapatex : 'Pendente'}</div></div><div class="mt-2 pt-2 border-t"><p><strong>Produtos Conferidos:</strong> ${secao2.produtos_conferidos || 'Pendente'}</p><p><strong>Carga Divergente:</strong> ${secao2.carga_divergente || 'Pendente'}</p><div class="mt-1 pl-4">${divergenciasHTML || ''}</div><p class="mt-2"><strong>Tem Sobra:</strong> ${secao2.tem_sobra || 'Pendente'}</p><div class="mt-1 pl-4">${sobrasHTML || ''}</div></div></div>`;
 
         const cargaNumero = item.secao1.carga;
-        let frotaSummaryHTML = `
-            <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm mt-2">
-                <h4 class="font-bold mb-2 text-base text-red-800">Resumo Checklist de Frota (Não Conformidades)</h4>`;
+        let frotaSummaryHTML = `<div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm mt-2"><h4 class="font-bold mb-2 text-base text-red-800">Resumo Checklist de Frota (Não Conformidades)</h4>`;
 
         if (cargaNumero) {
             const checklistFrota = allChecklistsFrota.find(c => c.carga === cargaNumero);
-
             if (checklistFrota && checklistFrota.status === 'Não Conforme') {
                 frotaSummaryHTML += `<p class="mb-2"><strong>Placa:</strong> ${checklistFrota.placa} | <strong>Motorista:</strong> ${checklistFrota.motorista}</p>`;
                 let naoConformidades = '';
-                frotaItems.forEach(spec => {
-                    const itemData = checklistFrota.itens[spec.id];
-                    if (itemData && itemData.status === 'Não Conforme') {
-                        naoConformidades += `<li class="text-sm">- ${spec.label}: ${itemData.obs || 'Sem observação'}</li>`;
-                    }
-                });
+                frotaItems.forEach(spec => { const itemData = checklistFrota.itens[spec.id]; if (itemData && itemData.status === 'Não Conforme') { naoConformidades += `<li class="text-sm">- ${spec.label}: ${itemData.obs || 'Sem observação'}</li>`; } });
                 frotaSummaryHTML += `<ul class="list-disc list-inside space-y-1">${naoConformidades}</ul>`;
             } else if (checklistFrota) {
                 frotaSummaryHTML += `<p class="text-sm text-green-700">Checklist de frota encontrado e está conforme.</p>`;
@@ -860,7 +854,6 @@ function iniciarEtapa(etapa, id) {
                     <div><label class="text-sm font-medium text-gray-700">Produtos conferidos?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div>
                     <div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" class="mr-2 h-4 w-4" onchange="toggleDivergencia(true)"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" class="mr-2 h-4 w-4" onchange="toggleDivergencia(false)" checked> Não</label></div></div>
                 </div>
-                
                 <div class="border-t pt-4">
                     <label class="text-sm font-medium text-gray-700">Tem sobra?</label>
                     <div class="flex space-x-6 mt-2">
@@ -871,10 +864,12 @@ function iniciarEtapa(etapa, id) {
                 <div id="sobra-details" class="hidden space-y-4 border-t pt-4">
                     <div id="sobra-container">
                         <h4 class="text-sm font-semibold text-gray-600">Detalhes da Sobra</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
-                            <div class="col-span-2 md:col-span-3">
-                                <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                                <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-start mt-2">
+                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                            <div class="relative">
+                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
                             </div>
                             <div class="flex items-center space-x-2">
                                 <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
@@ -883,15 +878,16 @@ function iniciarEtapa(etapa, id) {
                         </div>
                     </div>
                 </div>
-                
                 <div id="divergencia-details" class="hidden space-y-4 border-t pt-4">
                     <div id="divergencia-tipo-dev_total">
                         <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Total)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
                             <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                            <div class="col-span-2">
-                                <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                                <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                            <div class="relative">
+                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
                             </div>
                             <div class="flex items-center space-x-2">
                                 <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
@@ -900,12 +896,14 @@ function iniciarEtapa(etapa, id) {
                         </div>
                     </div>
                     <div id="divergencia-tipo-dev_parcial">
-                         <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Parcial)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+                        <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Parcial)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
                             <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                            <div class="col-span-2">
-                                <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                                <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                            <div class="relative">
+                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
                             </div>
                             <div class="flex items-center space-x-2">
                                 <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
@@ -914,12 +912,14 @@ function iniciarEtapa(etapa, id) {
                         </div>
                     </div>
                     <div id="divergencia-tipo-falta">
-                         <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Falta)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+                        <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Falta)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
                             <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                            <div class="col-span-2">
-                                <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                                <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                            <div class="relative">
+                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
                             </div>
                             <div class="flex items-center space-x-2">
                                 <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
@@ -928,12 +928,14 @@ function iniciarEtapa(etapa, id) {
                         </div>
                     </div>
                     <div id="divergencia-tipo-retira_oc">
-                         <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Retira O.C)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+                        <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Retira O.C)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
                             <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                            <div class="col-span-2">
-                                <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                                <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                            <div class="relative">
+                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
                             </div>
                             <div class="flex items-center space-x-2">
                                 <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
@@ -1000,15 +1002,16 @@ function getDivergenciaInputValues(containerId) {
     const container = document.getElementById(containerId);
     if(!container) return [];
 
-    return Array.from(container.querySelectorAll('.nf')).map((nfInput, index) => {
+    return Array.from(container.querySelectorAll('.nf')).map((nfInput) => {
         const row = nfInput.closest('.grid');
         const produto = row.querySelector('.produto')?.value || '';
-        const descricao = row.querySelector('.info-produto')?.textContent || ''; // Pega a descrição
+        const descricao = row.querySelector('.descricao-produto')?.value || ''; // <-- CORRIGIDO AQUI
+        const embalagem = row.querySelector('.embalagem-input')?.value || '';
         const qtd = row.querySelector('.qtd')?.value || '';
         const nf = nfInput.value || '';
 
         if(nf || produto || qtd) {
-            return { nf, produto, descricao, qtd }; // Retorna com a descrição
+            return { nf, produto, descricao, embalagem, qtd };
         }
         return null;
     }).filter(item => item !== null);
@@ -1018,13 +1021,14 @@ function getSobraInputValues(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return [];
 
-    return Array.from(container.querySelectorAll('.grid.items-center')).map(row => {
+    return Array.from(container.querySelectorAll('.grid.items-start')).map(row => {
         const produto = row.querySelector('.produto')?.value || '';
-        const descricao = row.querySelector('.info-produto')?.textContent || ''; // Pega a descrição
+        const descricao = row.querySelector('.descricao-produto')?.value || ''; // <-- CORRIGIDO AQUI
+        const embalagem = row.querySelector('.embalagem-input')?.value || '';
         const qtd = row.querySelector('.qtd')?.value || '';
 
         if (produto || qtd) {
-            return { produto, descricao, qtd }; // Retorna com a descrição
+            return { produto, descricao, embalagem, qtd };
         }
         return null;
     }).filter(item => item !== null);
@@ -1173,21 +1177,17 @@ function abrirModal(id) {
     const secao1 = item.secao1 || {};
     const secao2 = item.secao2 || {};
     const secao3 = item.secao3 || {};
-
+    
     let divergenciasHTML = '';
     if (secao2.carga_divergente === 'Sim') {
-        const tipos = [
-            {label: 'Dev. Total', data: secao2.divergencia_dev_total},
-            {label: 'Dev. Parcial', data: secao2.divergencia_dev_parcial},
-            {label: 'Falta', data: secao2.divergencia_falta},
-            {label: 'Retira O.C', data: secao2.divergencia_retira_oc},
-        ];
+        const tipos = [{label: 'Dev. Total', data: secao2.divergencia_dev_total},{label: 'Dev. Parcial', data: secao2.divergencia_dev_parcial},{label: 'Falta', data: secao2.divergencia_falta},{label: 'Retira O.C', data: secao2.divergencia_retira_oc}];
         tipos.forEach(tipo => {
             if(tipo.data && tipo.data.length > 0) {
                 divergenciasHTML += `<h5 class="font-semibold mt-1">Divergência: ${tipo.label}</h5>`;
                 tipo.data.forEach(d => {
                     const descricaoLimpa = (d.descricao || '').replace('Buscando...', '').replace('Erro na busca (verifique a cota)', '');
-                    divergenciasHTML += `<p class="pl-2">- NF: ${d.nf}, Prod: ${d.produto} ${descricaoLimpa ? `- ${descricaoLimpa}` : ''}, Qtd: ${d.qtd}</p>`;
+                    const embalagemInfo = d.embalagem ? `(Emb: ${d.embalagem})` : ''; // <-- Adicionado
+                    divergenciasHTML += `<p class="pl-2">- NF: ${d.nf}, Prod: ${d.produto} ${descricaoLimpa ? `- ${descricaoLimpa}` : ''} ${embalagemInfo}, Qtd: ${d.qtd}</p>`;
                 });
             }
         });
@@ -1198,7 +1198,8 @@ function abrirModal(id) {
         sobrasHTML += `<h5 class="font-semibold mt-1">Sobras:</h5>`;
         secao2.sobras.forEach(s => {
             const descricaoLimpa = (s.descricao || '').replace('Buscando...', '').replace('Erro na busca (verifique a cota)', '');
-            sobrasHTML += `<p class="pl-2">- Prod: ${s.produto} ${descricaoLimpa ? `- ${descricaoLimpa}` : ''}, Qtd: ${s.qtd}</p>`;
+            const embalagemInfo = s.embalagem ? `(Emb: ${s.embalagem})` : ''; // <-- Adicionado
+            sobrasHTML += `<p class="pl-2">- Prod: ${s.produto} ${descricaoLimpa ? `- ${descricaoLimpa}` : ''} ${embalagemInfo}, Qtd: ${s.qtd}</p>`;
         });
     }
 
@@ -2198,38 +2199,32 @@ async function fetchChecklistsPageFrota(page = 1, reset = false) {
     }
 async function buscarProduto(event) {
     const inputCodigo = event.target;
-    const codigo = inputCodigo.value.trim();
-    
     const parentRow = inputCodigo.closest('.grid');
     if (!parentRow) return;
 
-    const spanInfo = parentRow.querySelector('.info-produto'); 
-    if (!spanInfo) return;
+    // Agora procuramos por um INPUT com a classe 'descricao-produto'
+    const inputDescricao = parentRow.querySelector('.descricao-produto'); 
+    if (!inputDescricao) return;
 
+    const codigo = inputCodigo.value.trim();
     if (codigo.length > 2) {
-        spanInfo.textContent = 'Buscando...';
+        inputDescricao.value = 'Buscando...'; // Usamos .value
         try {
             const produtoDoc = await db.collection('produtos').doc(codigo).get();
             if (produtoDoc.exists) {
-                const data = produtoDoc.data();
-                const descricao = data.descricao || 'Descrição não encontrada';
-                const embalagem = data.embalagem || ''; 
-                
-                spanInfo.textContent = embalagem ? `${descricao} (${embalagem})` : descricao;
-                
-                spanInfo.classList.remove('text-red-500');
+                inputDescricao.value = produtoDoc.data().descricao; // Usamos .value
+                inputDescricao.classList.remove('text-red-500');
             } else {
-                spanInfo.textContent = 'Produto não encontrado';
-                spanInfo.classList.add('text-red-500');
+                inputDescricao.value = 'Produto não encontrado'; // Usamos .value
+                inputDescricao.classList.add('text-red-500');
             }
         } catch (error) {
             console.error("Erro ao buscar produto:", error);
-            // Se for erro de cota, a mensagem será esta
-            spanInfo.textContent = 'Erro na busca (verifique a cota)'; 
-            spanInfo.classList.add('text-red-500');
+            inputDescricao.value = 'Erro na busca'; // Usamos .value
+            inputDescricao.classList.add('text-red-500');
         }
     } else {
-        spanInfo.textContent = ''; 
+        inputDescricao.value = ''; // Usamos .value
     }
 }
     </script>
