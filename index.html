@@ -133,16 +133,23 @@
                             <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg h-full flex flex-col">
                                 <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4">
                                     <h2 class="text-lg font-bold text-gray-800">Checklists de Retorno Recentes</h2>
-                                    <div class="flex items-center space-x-2 w-full md:w-auto">
-                                        <button onclick="exportarExcel()" class="bg-green-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-green-700 transition shadow flex items-center space-x-2 flex-1 md:flex-none justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                            <span class="hidden sm:inline">Exportar Excel</span>
-                                        </button>
-                                        <button id="btn-novo-checklist" onclick="iniciarNovoChecklist()" class="bg-blue-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition shadow disabled:bg-gray-400 disabled:cursor-not-allowed flex-1 md:flex-none justify-center">
-                                            + Novo Checklist
-                                        </button>
-                                    </div>
-                                </div>
+<div class="flex items-center space-x-2 w-full md:w-auto">
+    <button onclick="exportarExcel()" class="bg-green-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-green-700 transition shadow flex items-center space-x-2 flex-1 md:flex-none justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        <span class="hidden sm:inline">Exportar Excel</span>
+    </button>
+
+    <button onclick="fetchChecklistsPage(1, true)" title="Atualizar Dados" class="bg-gray-200 text-gray-700 p-2 rounded-lg font-semibold text-sm hover:bg-gray-300 transition shadow flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 4l5 5M20 20l-5-5" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5m11 11v-5h-5M4.5 9.5a9 9 0 0115 0m-15 5a9 9 0 0015 0" />
+        </svg>
+    </button>
+    <button id="btn-novo-checklist" onclick="iniciarNovoChecklist()" class="bg-blue-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition shadow disabled:bg-gray-400 disabled:cursor-not-allowed flex-1 md:flex-none justify-center">
+        + Novo Checklist
+    </button>
+</div>
+</div>
                                  <div class="flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-2 mb-4">
                                     <input type="date" id="filtro-data-inicio" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Início">
                                     <input type="date" id="filtro-data-fim" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Fim">
@@ -206,17 +213,24 @@
 
                             <div class="bg-white p-4 md:p-6 rounded-xl shadow-lg h-full flex flex-col">
                                 <div class="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-4">
-                                    <h2 class="text-lg font-bold text-gray-800">Checklists de Frota Recentes</h2>
-                                    <div class="flex items-center space-x-2 w-full md:w-auto">
-                                        <button onclick="exportarExcelFrota()" class="bg-green-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-green-700 transition shadow flex items-center space-x-2 flex-1 md:flex-none justify-center">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                                            <span class="hidden sm:inline">Exportar Excel</span>
-                                        </button>
-                                        <button id="btn-novo-checklist-frota" onclick="iniciarNovoChecklistFrota()" class="bg-blue-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition shadow disabled:bg-gray-400 disabled:cursor-not-allowed flex-1 md:flex-none justify-center">
-                                            + Novo Checklist Frota
-                                        </button>
-                                    </div>
-                                </div>
+        <h2 class="text-lg font-bold text-gray-800">Checklists de Frota Recentes</h2>
+                                <div class="flex items-center space-x-2 w-full md:w-auto">
+    <button onclick="exportarExcelFrota()" class="bg-green-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-green-700 transition shadow flex items-center space-x-2 flex-1 md:flex-none justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+        <span class="hidden sm:inline">Exportar Excel</span>
+    </button>
+
+    <button onclick="fetchChecklistsPageFrota(1, true)" title="Atualizar Dados" class="bg-gray-200 text-gray-700 p-2 rounded-lg font-semibold text-sm hover:bg-gray-300 transition shadow flex items-center justify-center">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 4l5 5M20 20l-5-5" />
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5m11 11v-5h-5M4.5 9.5a9 9 0 0115 0m-15 5a9 9 0 0015 0" />
+        </svg>
+    </button>
+    <button id="btn-novo-checklist-frota" onclick="iniciarNovoChecklistFrota()" class="bg-blue-600 text-white px-3 py-2 rounded-lg font-semibold text-sm hover:bg-blue-700 transition shadow disabled:bg-gray-400 disabled:cursor-not-allowed flex-1 md:flex-none justify-center">
+        + Novo Checklist Frota
+    </button>
+</div>
+</div>
                                 <div class="flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-2 mb-4">
                                      <input type="date" id="filtro-data-inicio-frota" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Início">
                                      <input type="date" id="filtro-data-fim-frota" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Fim">
@@ -1271,40 +1285,52 @@ function abrirModal(id) {
         </div>`;
 }
 
-    function abrirModalConfirmacaoExclusao(id, type) {
-        const container = document.getElementById('confirmation-modal-container');
-        container.innerHTML = `
-            <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-40">
-                <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
-                    <h3 class="text-lg font-bold text-gray-800">Confirmar Exclusão</h3>
-                    <p class="text-gray-600 mt-2">Você tem certeza que deseja excluir este checklist? Esta ação não pode ser desfeita.</p>
-                    <div class="mt-6 flex justify-center space-x-3">
-                        <button onclick="fecharModalConfirmacao()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-300 transition w-24">Cancelar</button>
-                        <button onclick="excluirChecklist('${id}', '${type}')" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-red-700 transition w-24">Excluir</button>
-                    </div>
+function fecharModalConfirmacao() {
+    document.getElementById('confirmation-modal-container').innerHTML = '';
+}
+
+function abrirModalConfirmacaoExclusao(id, type) {
+    const container = document.getElementById('confirmation-modal-container');
+    container.innerHTML = `
+        <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-40">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm p-6 text-center">
+                <h3 class="text-lg font-bold text-gray-800">Confirmar Exclusão</h3>
+                <p class="text-gray-600 mt-2">Você tem certeza que deseja excluir este checklist? Esta ação não pode ser desfeita.</p>
+                <div class="mt-6 flex justify-center space-x-3">
+                    <button onclick="fecharModalConfirmacao()" class="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-300 transition w-24">Cancelar</button>
+                    <button onclick="excluirChecklist('${id}', '${type}')" class="bg-red-600 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-red-700 transition w-24">Excluir</button>
                 </div>
             </div>
-        `;
-    }
+        </div>
+    `;
+}
 
-    function excluirChecklist(id, type) {
-        const collection = type === 'retorno' ? checklistsCollection : checklistsFrotaCollection;
-        collection.doc(id).delete()
-            .then(() => {
-                showToast('Checklist excluído com sucesso!');
-                fecharModalConfirmacao();
-                if (type === 'retorno') {
-                    fetchChecklistsPage(1, true); 
-                } else {
-                    fetchChecklistsPageFrota(1, true);
-                }
-            })
-            .catch(error => {
-                console.error("Erro ao excluir checklist: ", error);
-                showToast('Erro ao excluir o checklist.', 'error');
-                fecharModalConfirmacao();
-            });
+async function excluirChecklist(id, type) {
+    const collection = type === 'retorno' ? checklistsCollection : checklistsFrotaCollection;
+    
+    try {
+        // 1. Espera o comando de exclusão ser completado no Firebase
+        await collection.doc(id).delete();
+        
+        // 2. Se deu tudo certo, mostra a mensagem de sucesso
+        showToast('Checklist excluído com sucesso!');
+        
+        // 3. Fecha a janela de confirmação
+        fecharModalConfirmacao();
+        
+        // 4. Só então, busca a lista de checklists atualizada
+        if (type === 'retorno') {
+            await fetchChecklistsPage(1, true); 
+        } else {
+            await fetchChecklistsPageFrota(1, true);
+        }
+    } catch (error) {
+        // Se qualquer passo acima falhar, executa o bloco de erro
+        console.error("Erro ao excluir checklist: ", error);
+        showToast('Erro ao excluir o checklist.', 'error');
+        fecharModalConfirmacao();
     }
+}
 
     function iniciarEdicao(id) {
        currentEditingId = id;
@@ -1870,7 +1896,7 @@ async function fetchChecklistsPageFrota(page = 1, reset = false) {
                     <div><label for="frota-placa" class="text-sm font-medium text-gray-700">Placa</label><input type="text" id="frota-placa" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
                     <div><label for="frota-caminhao" class="text-sm font-medium text-gray-700">Caminhão</label><input type="text" id="frota-caminhao" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
                     <div><label for="frota-motorista" class="text-sm font-medium text-gray-700">Motorista</label><input type="text" id="frota-motorista" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div class="md:col-span-2"><label for="frota-carga" class="text-sm font-medium text-gray-700">Número da Carga (Opcional)</label><input type="text" id="frota-carga" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div class="md:col-span-2"><label for="frota-carga" class="text-sm font-medium text-gray-700">Número da Carga</label><input type="text" id="frota-carga" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
                 </div>
 
                 ${itemsHTML}
