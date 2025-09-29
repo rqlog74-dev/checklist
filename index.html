@@ -121,8 +121,9 @@
                     <div id="view-dashboard" class="view active">
                         <main class="p-4 md:p-6">
                              <!-- Cards de Estatísticas -->
-                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 md:gap-6 mb-6">
                                 <div class="bg-blue-500 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Total</h3><p id="stats-total" class="text-3xl font-bold mt-2">0</p></div>
+                                <div class="bg-indigo-500 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Total no Período</h3><p id="stats-periodo" class="text-3xl font-bold mt-2">0</p></div>
                                 <div class="bg-yellow-500 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Aguardando Conferência</h3><p id="stats-aguardando-conferencia" class="text-3xl font-bold mt-2">0</p></div>
                                 <div class="bg-cyan-500 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Aguardando Admin</h3><p id="stats-aguardando-admin" class="text-3xl font-bold mt-2">0</p></div>
                                 <div class="bg-orange-400 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Em Tratamento</h3><p id="stats-em-tratamento" class="text-3xl font-bold mt-2">0</p></div>
@@ -196,8 +197,9 @@
                     <div id="view-dashboard-frota" class="view active">
                          <main class="p-4 md:p-6">
                              <!-- Cards de Estatísticas Frota -->
-                            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 md:gap-6 mb-6">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-6">
                                 <div class="bg-blue-800 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Total Frota</h3><p id="stats-total-frota" class="text-3xl font-bold mt-2">0</p></div>
+                                <div class="bg-indigo-800 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Total no Período</h3><p id="stats-periodo-frota" class="text-3xl font-bold mt-2">0</p></div>
                                 <div class="bg-green-600 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Conforme</h3><p id="stats-conforme-frota" class="text-3xl font-bold mt-2">0</p></div>
                                 <div class="bg-red-600 text-white p-5 rounded-xl shadow-lg"><h3 class="text-sm font-semibold uppercase">Não Conforme</h3><p id="stats-nao-conforme-frota" class="text-3xl font-bold mt-2">0</p></div>
                             </div>
@@ -335,6 +337,31 @@
     let pageStartCursorsFrota = [null];
     let lastFetchedPageSizeFrota = 0;
 
+    const frotaItems = [
+        { id: 'cinto_seguranca', label: 'Cinto de Segurança', section: 'Estrutura e Componentes' },
+        { id: 'placa_visivel', label: 'Placa: Visível e Legível', section: 'Estrutura e Componentes' },
+        { id: 'parabrisa_trincado', label: 'Parabrisa: Sem Trincados', section: 'Estrutura e Componentes' },
+        { id: 'retrovisores', label: 'Retrovisores', section: 'Estrutura e Componentes' },
+        { id: 'pneus_calibrados', label: 'Pneus: Calibrados, sem desgastes excessivos, corte ou bolhas (incluindo estepe)', section: 'Estrutura e Componentes' },
+        { id: 'parachoque_protetores', label: 'Para-choque: Protetores de rodas, estrutura e faixa reflexiva (em ordem e bom estado)', section: 'Estrutura e Componentes' },
+        { id: 'ausencia_vazamentos', label: 'Ausência de Vazamentos', section: 'Estrutura e Componentes' },
+        { id: 'dois_carrinhos', label: 'Dois Carrinhos', section: 'Estrutura e Componentes' },
+        { id: 'triangulo_estepe', label: 'Possui: Triângulo e Estepe (Perguntar ao mototista)', section: 'Equipamentos de Proteção e Emergência' },
+        { id: 'farois_dianteiros', label: 'Faróis Dianteiros: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
+        { id: 'lanternas_dianteiras', label: 'Lanternas Dianteiras: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
+        { id: 'setas_dianteiras', label: 'Setas Dianteiras: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
+        { id: 'buzina', label: 'Buzina: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
+        { id: 'luz_placa_traseira', label: 'Luz da Placa Traseira: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
+        { id: 'lanternas_traseiras', label: 'Lanternas Traseiras: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
+        { id: 'setas_traseiras', label: 'Setas Traseiras: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
+        { id: 'luz_re', label: 'Luz de Ré: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
+        { id: 'sirene_re', label: 'Sirene de Ré: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
+        { id: 'luz_freio', label: 'Luz de Freio: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
+        { id: 'documentacao', label: 'Documentação (Licenciamento anual, licenciamento sanitário, dedetização e certificado do tacógrafo)', section: 'Documentação do Veículo' },
+        { id: 'tacografo_velocimetro', label: 'Tacógrafo e Velocímetro: Funcionando corretamente', section: 'Documentação do Veículo' },
+        { id: 'termo_king', label: 'Termo King: Funcionando corretamente (0º a 13º)', section: 'Documentação do Veículo' },
+        { id: 'veiculo_abastecido', label: 'Veículo Abastecido', section: 'Outros' }
+    ];
 
     // ===============================================================
     //                LÓGICA DE AUTENTICAÇÃO E DADOS INICIAIS
@@ -484,49 +511,53 @@
     }
 
 
-    function renderizarTabela(dados) {
-        const tabelaBody = document.getElementById('tabela-checklists');
-        tabelaBody.innerHTML = '';
-        if(dados.length === 0){ tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">Nenhum checklist encontrado para os filtros aplicados.</td></tr>`; return; }
+function renderizarTabela(dados) {
+    const tabelaBody = document.getElementById('tabela-checklists');
+    tabelaBody.innerHTML = '';
+    if(dados.length === 0){ tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-gray-500">Nenhum checklist encontrado para os filtros aplicados.</td></tr>`; return; }
+    
+    dados.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.className = 'bg-white border-b hover:bg-gray-50';
+        const statusClass = statusClasses[item.status] || '';
         
-        dados.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.className = 'bg-white border-b hover:bg-gray-50';
-            const statusClass = statusClasses[item.status] || '';
-            
-            let actionButton = '';
-            const canConferir = currentUser && currentUser.role === 'Conferente';
-            const canFinalizar = currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Master');
-            const isMaster = currentUser && currentUser.role === 'Master';
+        let actionButton = '';
+        // ===============================================================
+        // A MUDANÇA ESTÁ AQUI!
+        // Adicionamos '|| currentUser.role === 'Master'' para permitir a conferência.
+        // ===============================================================
+        const canConferir = currentUser && (currentUser.role === 'Conferente' || currentUser.role === 'Master');
+        const canFinalizar = currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Master');
+        const isMaster = currentUser && currentUser.role === 'Master';
 
-            if (item.status === 'Aguardando Conferência' && canConferir) { 
-                actionButton = `<button onclick="iniciarEtapa(2, '${item.id}')" class="bg-yellow-400 text-yellow-800 px-3 py-1 rounded-full font-semibold text-xs hover:bg-yellow-500">Conferir</button>`; 
-            } 
-            else if ((item.status === 'Aguardando Admin' || item.status === 'Em Tratamento') && canFinalizar) { 
-                actionButton = `<button onclick="iniciarEtapa(3, '${item.id}')" class="bg-blue-400 text-blue-800 px-3 py-1 rounded-full font-semibold text-xs hover:bg-blue-500">Finalizar</button>`; 
-            }
+        if (item.status === 'Aguardando Conferência' && canConferir) { 
+            actionButton = `<button onclick="iniciarEtapa(2, '${item.id}')" class="bg-yellow-400 text-yellow-800 px-3 py-1 rounded-full font-semibold text-xs hover:bg-yellow-500">Conferir</button>`; 
+        } 
+        else if ((item.status === 'Aguardando Admin' || item.status === 'Em Tratamento') && canFinalizar) { 
+            actionButton = `<button onclick="iniciarEtapa(3, '${item.id}')" class="bg-blue-400 text-blue-800 px-3 py-1 rounded-full font-semibold text-xs hover:bg-blue-500">Finalizar</button>`; 
+        }
 
-            let masterActions = '';
-            if(isMaster) {
-                masterActions = `
-                    <button onclick="iniciarEdicao('${item.id}')" class="font-medium text-blue-600 hover:underline text-xs ml-3">Editar</button>
-                    <button onclick="abrirModalConfirmacaoExclusao('${item.id}', 'retorno')" class="font-medium text-red-600 hover:underline text-xs ml-3">Excluir</button>
-                `;
-            }
-
-            const visualizarButton = `<button onclick="abrirModal('${item.id}')" class="font-medium text-gray-600 hover:underline text-xs ${actionButton || masterActions ? 'ml-3' : ''}">Visualizar</button>`;
-            const dataFormatada = item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Data Inválida';
-
-            tr.innerHTML = `
-                <td class="py-2 px-2 sm:py-3 sm:px-4">${dataFormatada}</td>
-                <td class="py-2 px-2 sm:py-3 sm:px-4 font-medium text-gray-900">${item.secao1.veiculo || 'N/A'}</td>
-                <td class="py-2 px-2 sm:py-3 sm:px-4 font-medium text-gray-900">${item.secao1.carga}</td>
-                <td class="py-2 px-2 sm:py-3 sm:px-4"><span class="px-2 py-1 font-semibold text-xs rounded-full ${statusClass}">${item.status.toUpperCase()}</span></td>
-                <td class="py-2 px-2 sm:py-3 sm:px-4 text-center"><div class="flex items-center justify-center">${actionButton}${visualizarButton}${masterActions}</div></td>
+        let masterActions = '';
+        if(isMaster) {
+            masterActions = `
+                <button onclick="iniciarEdicao('${item.id}')" class="font-medium text-blue-600 hover:underline text-xs ml-3">Editar</button>
+                <button onclick="abrirModalConfirmacaoExclusao('${item.id}', 'retorno')" class="font-medium text-red-600 hover:underline text-xs ml-3">Excluir</button>
             `;
-            tabelaBody.appendChild(tr);
-        });
-    }
+        }
+
+        const visualizarButton = `<button onclick="abrirModal('${item.id}')" class="font-medium text-gray-600 hover:underline text-xs ${actionButton || masterActions ? 'ml-3' : ''}">Visualizar</button>`;
+        const dataFormatada = item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'Data Inválida';
+
+        tr.innerHTML = `
+            <td class="py-2 px-2 sm:py-3 sm:px-4">${dataFormatada}</td>
+            <td class="py-2 px-2 sm:py-3 sm:px-4 font-medium text-gray-900">${item.secao1.veiculo || 'N/A'}</td>
+            <td class="py-2 px-2 sm:py-3 sm:px-4 font-medium text-gray-900">${item.secao1.carga}</td>
+            <td class="py-2 px-2 sm:py-3 sm:px-4"><span class="px-2 py-1 font-semibold text-xs rounded-full ${statusClass}">${item.status.toUpperCase()}</span></td>
+            <td class="py-2 px-2 sm:py-3 sm:px-4 text-center"><div class="flex items-center justify-center">${actionButton}${visualizarButton}${masterActions}</div></td>
+        `;
+        tabelaBody.appendChild(tr);
+    });
+}
 
     function updatePermissions() {
         const btnNovo = document.getElementById('btn-novo-checklist');
@@ -598,34 +629,42 @@
         container.appendChild(newInputGroup);
     }
     
-    function addDivergenciaInput(containerId) {
-        const container = document.getElementById(containerId);
-        const newRow = document.createElement('div');
-        newRow.className = 'grid grid-cols-1 md:grid-cols-4 gap-2 items-center mt-2';
-        newRow.innerHTML = `
-            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm col-span-2">
-            <div class="flex items-center space-x-2">
-                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
-            </div>
-        `;
-        container.appendChild(newRow);
-    }
+ function addDivergenciaInput(containerId) {
+    const container = document.getElementById(containerId);
+    const newRow = document.createElement('div');
+    newRow.className = 'grid grid-cols-1 md:grid-cols-4 gap-2 items-center mt-2';
+    newRow.innerHTML = `
+        <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+        
+        <div class="col-span-2">
+            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+            <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+            <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
     
-    function addSobraInput(containerId) {
-        const container = document.getElementById(containerId);
-        const newRow = document.createElement('div');
-        newRow.className = 'grid grid-cols-1 md:grid-cols-4 gap-2 items-center mt-2';
-        newRow.innerHTML = `
-            <input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-            <div class="flex items-center space-x-2">
-                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
-            </div>
-        `;
-        container.appendChild(newRow);
-    }
+function addSobraInput(containerId) {
+    const container = document.getElementById(containerId);
+    const newRow = document.createElement('div');
+    newRow.className = 'grid grid-cols-1 md:grid-cols-4 gap-2 items-center mt-2';
+    newRow.innerHTML = `
+        <div class="col-span-2 md:col-span-3">
+            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+            <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+        </div>
+        <div class="flex items-center space-x-2">
+            <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+            <button type="button" onclick="this.parentElement.parentElement.remove()" class="text-red-500 hover:text-red-700 font-bold text-lg">&times;</button>
+        </div>
+    `;
+    container.appendChild(newRow);
+}
 
     // --- LÓGICA DOS FORMULÁRIOS (GERAÇÃO DINÂMICA) - RETORNO ---
     function iniciarNovoChecklist() {
@@ -668,215 +707,272 @@
         setupAutocomplete();
     }
     
-    function iniciarEtapa(etapa, id) {
-        currentEditingId = id;
-        const item = allChecklists.find(c => c.id === id);
-        if (!item) return;
+function iniciarEtapa(etapa, id) {
+    currentEditingId = id;
+    const item = allChecklists.find(c => c.id === id);
+    if (!item) return;
 
-        const formContainer = document.getElementById('form-container');
-        let summaryHTML = '';
-        let formHTML = '';
+    const formContainer = document.getElementById('form-container');
+    let summaryHTML = '';
+    let formHTML = '';
 
-        const dataFormatada = item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A';
-        const secao1 = item.secao1 || {};
-        const secao2 = item.secao2 || {};
-        const secao3 = item.secao3 || {};
-        const radioChecked = (value, expected) => value === expected ? 'checked' : '';
+    const dataFormatada = item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A';
+    const secao1 = item.secao1 || {};
+    const secao2 = item.secao2 || {};
+    const secao3 = item.secao3 || {};
+    const radioChecked = (value, expected) => value === expected ? 'checked' : '';
 
-        if (etapa >= 2) {
-             summaryHTML += `
-                <div class="p-3 bg-gray-100 rounded-lg text-sm">
-                    <h4 class="font-bold mb-2 text-base flex justify-between items-center">
-                        <span>Resumo Etapa 1: Documentos</span>
-                        <span class="font-normal text-xs text-gray-500">Criado por: ${item.criadoPor || 'N/A'}</span>
-                    </h4>
-                    <p><strong>Data:</strong> ${dataFormatada}</p>
-                    <p><strong>Veículo:</strong> ${secao1.veiculo || 'N/A'}</p>
-                    <div class="mt-2 pt-2 border-t">
-                        <h5 class="font-semibold mb-1">Notas não Conforme:</h5>
-                        <p><strong>Falta N.F:</strong> ${(secao1.falta_nf || []).join(', ') || 'Nenhuma'}</p>
-                        <p><strong>Falta Assinatura:</strong> ${(secao1.falta_assinatura || []).join(', ') || 'Nenhuma'}</p>
-                        <p><strong>Foto Canhoto:</strong> ${(secao1.foto_canhoto || []).join(', ') || 'Nenhuma'}</p>
-                        <p><strong>Dev. Falta N.F:</strong> ${(secao1.dev_falta_nf || []).join(', ') || 'Nenhuma'}</p>
-                        <p><strong>Dev. Total:</strong> ${(secao1.dev_total || []).join(', ') || 'Nenhuma'}</p>
-                        <p><strong>Dev. Parcial:</strong> ${(secao1.dev_parcial || []).join(', ') || 'Nenhuma'}</p>
-                        <p><strong>Retira O.C:</strong> ${(secao1.retira_oc || []).join(', ') || 'Nenhuma'}</p>
-                    </div>
-                    <div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-3 gap-2">
-                        <div><strong>Cartão Comb.:</strong> ${secao1.cartao_combustivel || 'N/A'}</div>
-                        <div><strong>Celular:</strong> ${secao1.celular || 'N/A'}</div>
-                        <div><strong>Carregador:</strong> ${secao1.carregador || 'N/A'}</div>
-                    </div>
-                </div>`;
+    if (etapa >= 2) {
+        summaryHTML += `
+            <div class="p-3 bg-gray-100 rounded-lg text-sm">
+                <h4 class="font-bold mb-2 text-base flex justify-between items-center">
+                    <span>Resumo Etapa 1: Documentos</span>
+                    <span class="font-normal text-xs text-gray-500">Criado por: ${item.criadoPor || 'N/A'}</span>
+                </h4>
+                <p><strong>Data:</strong> ${dataFormatada}</p>
+                <p><strong>Veículo:</strong> ${secao1.veiculo || 'N/A'}</p>
+                <div class="mt-2 pt-2 border-t">
+                    <h5 class="font-semibold mb-1">Notas não Conforme:</h5>
+                    <p><strong>Falta N.F:</strong> ${(secao1.falta_nf || []).join(', ') || 'Nenhuma'}</p>
+                    <p><strong>Falta Assinatura:</strong> ${(secao1.falta_assinatura || []).join(', ') || 'Nenhuma'}</p>
+                    <p><strong>Foto Canhoto:</strong> ${(secao1.foto_canhoto || []).join(', ') || 'Nenhuma'}</p>
+                    <p><strong>Dev. Falta N.F:</strong> ${(secao1.dev_falta_nf || []).join(', ') || 'Nenhuma'}</p>
+                    <p><strong>Dev. Total:</strong> ${(secao1.dev_total || []).join(', ') || 'Nenhuma'}</p>
+                    <p><strong>Dev. Parcial:</strong> ${(secao1.dev_parcial || []).join(', ') || 'Nenhuma'}</p>
+                    <p><strong>Retira O.C:</strong> ${(secao1.retira_oc || []).join(', ') || 'Nenhuma'}</p>
+                </div>
+                <div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div><strong>Cartão Comb.:</strong> ${secao1.cartao_combustivel || 'N/A'}</div>
+                    <div><strong>Celular:</strong> ${secao1.celular || 'N/A'}</div>
+                    <div><strong>Carregador:</strong> ${secao1.carregador || 'N/A'}</div>
+                </div>
+            </div>`;
+    }
+
+    if (etapa >= 3) {
+        let divergenciasHTML = '';
+        if (secao2.carga_divergente === 'Sim') {
+            const tipos = [
+                {label: 'Dev. Total', data: secao2.divergencia_dev_total},
+                {label: 'Dev. Parcial', data: secao2.divergencia_dev_parcial},
+                {label: 'Falta', data: secao2.divergencia_falta},
+                {label: 'Retira O.C', data: secao2.divergencia_retira_oc},
+            ];
+            tipos.forEach(tipo => {
+                if(tipo.data && tipo.data.length > 0) {
+                    divergenciasHTML += `<h5 class="font-semibold mt-1">Divergência: ${tipo.label}</h5>`;
+                    tipo.data.forEach(d => {
+                        const desc = d.descricao ? `- ${d.descricao}` : '';
+                        divergenciasHTML += `<p class="pl-2">- NF: ${d.nf}, Prod: ${d.produto} ${desc}, Qtd: ${d.qtd}</p>`;
+                    });
+                }
+            });
         }
-        
-        if (etapa >= 3) {
-            let divergenciasHTML = '';
-            if (secao2.carga_divergente === 'Sim') {
-                const tipos = [
-                    {label: 'Dev. Total', data: secao2.divergencia_dev_total},
-                    {label: 'Dev. Parcial', data: secao2.divergencia_dev_parcial},
-                    {label: 'Falta', data: secao2.divergencia_falta},
-                    {label: 'Retira O.C', data: secao2.divergencia_retira_oc},
-                ];
-                tipos.forEach(tipo => {
-                    if(tipo.data && tipo.data.length > 0) {
-                        divergenciasHTML += `<h5 class="font-semibold mt-1">Divergência: ${tipo.label}</h5>`;
-                        tipo.data.forEach(d => {
-                           divergenciasHTML += `<p class="pl-2">- NF: ${d.nf}, Prod: ${d.produto}, Qtd: ${d.qtd}</p>`;
-                        });
+
+        let sobrasHTML = '';
+        if (secao2.tem_sobra === 'Sim' && secao2.sobras && secao2.sobras.length > 0) {
+            sobrasHTML += `<h5 class="font-semibold mt-1">Sobras:</h5>`;
+            secao2.sobras.forEach(s => {
+                const desc = s.descricao ? `- ${s.descricao}` : '';
+                sobrasHTML += `<p class="pl-2">- Prod: ${s.produto} ${desc}, Qtd: ${s.qtd}</p>`;
+            });
+        }
+
+        summaryHTML += `
+            <div class="p-3 bg-gray-100 rounded-lg text-sm mt-2">
+                <h4 class="font-bold mb-2 text-base flex justify-between items-center">
+                    <span>Resumo Etapa 2: Ativos / Produtos</span>
+                    <span class="font-normal text-xs text-gray-500">Conferido por: ${item.conferidoPor || 'Pendente'}</span>
+                </h4>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    <div><strong>Caçamba:</strong> ${secao2.cacamba !== undefined ? secao2.cacamba : 'Pendente'}</div>
+                    <div><strong>Gaiola:</strong> ${secao2.gaiola !== undefined ? secao2.gaiola : 'Pendente'}</div>
+                    <div><strong>Palete:</strong> ${secao2.palete !== undefined ? secao2.palete : 'Pendente'}</div>
+                    <div><strong>Chapatex:</strong> ${secao2.chapatex !== undefined ? secao2.chapatex : 'Pendente'}</div>
+                </div>
+                <div class="mt-2 pt-2 border-t">
+                    <p><strong>Produtos Conferidos:</strong> ${secao2.produtos_conferidos || 'Pendente'}</p>
+                    <p><strong>Carga Divergente:</strong> ${secao2.carga_divergente || 'Pendente'}</p>
+                    <div class="mt-1 pl-4">${divergenciasHTML || ''}</div>
+                    <p class="mt-2"><strong>Tem Sobra:</strong> ${secao2.tem_sobra || 'Pendente'}</p>
+                    <div class="mt-1 pl-4">${sobrasHTML || ''}</div>
+                </div>
+            </div>`;
+
+        const cargaNumero = item.secao1.carga;
+        let frotaSummaryHTML = `
+            <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm mt-2">
+                <h4 class="font-bold mb-2 text-base text-red-800">Resumo Checklist de Frota (Não Conformidades)</h4>`;
+
+        if (cargaNumero) {
+            const checklistFrota = allChecklistsFrota.find(c => c.carga === cargaNumero);
+
+            if (checklistFrota && checklistFrota.status === 'Não Conforme') {
+                frotaSummaryHTML += `<p class="mb-2"><strong>Placa:</strong> ${checklistFrota.placa} | <strong>Motorista:</strong> ${checklistFrota.motorista}</p>`;
+                let naoConformidades = '';
+                frotaItems.forEach(spec => {
+                    const itemData = checklistFrota.itens[spec.id];
+                    if (itemData && itemData.status === 'Não Conforme') {
+                        naoConformidades += `<li class="text-sm">- ${spec.label}: ${itemData.obs || 'Sem observação'}</li>`;
                     }
                 });
-            }
-            
-            let sobrasHTML = '';
-            if (secao2.tem_sobra === 'Sim' && secao2.sobras && secao2.sobras.length > 0) {
-                sobrasHTML += `<h5 class="font-semibold mt-1">Sobras:</h5>`;
-                secao2.sobras.forEach(s => {
-                    sobrasHTML += `<p class="pl-2">- Prod: ${s.produto}, Qtd: ${s.qtd}</p>`;
-                });
-            }
-
-            summaryHTML += `
-                <div class="p-3 bg-gray-100 rounded-lg text-sm mt-2">
-                    <h4 class="font-bold mb-2 text-base flex justify-between items-center">
-                        <span>Resumo Etapa 2: Ativos / Produtos</span>
-                        <span class="font-normal text-xs text-gray-500">Conferido por: ${item.conferidoPor || 'Pendente'}</span>
-                    </h4>
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                        <div><strong>Caçamba:</strong> ${secao2.cacamba !== undefined ? secao2.cacamba : 'Pendente'}</div>
-                        <div><strong>Gaiola:</strong> ${secao2.gaiola !== undefined ? secao2.gaiola : 'Pendente'}</div>
-                        <div><strong>Palete:</strong> ${secao2.palete !== undefined ? secao2.palete : 'Pendente'}</div>
-                        <div><strong>Chapatex:</strong> ${secao2.chapatex !== undefined ? secao2.chapatex : 'Pendente'}</div>
-                    </div>
-                    <div class="mt-2 pt-2 border-t">
-                        <p><strong>Produtos Conferidos:</strong> ${secao2.produtos_conferidos || 'Pendente'}</p>
-                        <p><strong>Carga Divergente:</strong> ${secao2.carga_divergente || 'Pendente'}</p>
-                        <div class="mt-1 pl-4">${divergenciasHTML || ''}</div>
-                        <p class="mt-2"><strong>Tem Sobra:</strong> ${secao2.tem_sobra || 'Pendente'}</p>
-                        <div class="mt-1 pl-4">${sobrasHTML || ''}</div>
-                    </div>
-                </div>`;
-
-            const cargaNumero = item.secao1.carga;
-            let frotaSummaryHTML = `
-                <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm mt-2">
-                    <h4 class="font-bold mb-2 text-base text-red-800">Resumo Checklist de Frota (Não Conformidades)</h4>`;
-
-            if (cargaNumero) {
-                const checklistFrota = allChecklistsFrota.find(c => c.carga === cargaNumero);
-
-                if (checklistFrota && checklistFrota.status === 'Não Conforme') {
-                    frotaSummaryHTML += `<p class="mb-2"><strong>Placa:</strong> ${checklistFrota.placa} | <strong>Motorista:</strong> ${checklistFrota.motorista}</p>`;
-                    let naoConformidades = '';
-                    frotaItems.forEach(spec => {
-                        const itemData = checklistFrota.itens[spec.id];
-                        if (itemData && itemData.status === 'Não Conforme') {
-                            naoConformidades += `<li class="text-sm">- ${spec.label}: ${itemData.obs || 'Sem observação'}</li>`;
-                        }
-                    });
-                    frotaSummaryHTML += `<ul class="list-disc list-inside space-y-1">${naoConformidades}</ul>`;
-                } else if (checklistFrota) {
-                    frotaSummaryHTML += `<p class="text-sm text-green-700">Checklist de frota encontrado e está conforme.</p>`;
-                } else {
-                    frotaSummaryHTML += `<p class="text-sm text-gray-500">Nenhum checklist de frota correspondente a esta carga foi encontrado.</p>`;
-                }
+                frotaSummaryHTML += `<ul class="list-disc list-inside space-y-1">${naoConformidades}</ul>`;
+            } else if (checklistFrota) {
+                frotaSummaryHTML += `<p class="text-sm text-green-700">Checklist de frota encontrado e está conforme.</p>`;
             } else {
-                frotaSummaryHTML += `<p class="text-sm text-gray-500">Número da carga não informado no checklist de retorno.</p>`;
+                frotaSummaryHTML += `<p class="text-sm text-gray-500">Nenhum checklist de frota correspondente a esta carga foi encontrado.</p>`;
             }
-            frotaSummaryHTML += `</div>`;
-            summaryHTML += frotaSummaryHTML;
+        } else {
+            frotaSummaryHTML += `<p class="text-sm text-gray-500">Número da carga não informado no checklist de retorno.</p>`;
         }
+        frotaSummaryHTML += `</div>`;
+        summaryHTML += frotaSummaryHTML;
+    }
 
-        if (etapa === 2) {
-            formHTML = `
-                <fieldset class="space-y-4">
-                    <h3 class="font-semibold text-gray-700 border-b pb-2">2° ATIVOS / PRODUTOS DIVERGENTE</h3>
-                    <div class="pt-2">
-                        <label class="text-sm font-medium text-gray-700">Ativos retornados (quantidade):</label>
-                        <div class="grid grid-cols-2 gap-x-4 gap-y-3 mt-2">
-                            <div><label for="s2-qtd_cacamba" class="text-xs text-gray-600">Caçamba</label><input type="number" id="s2-qtd_cacamba" value="${secao2.cacamba || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                            <div><label for="s2-qtd_gaiola" class="text-xs text-gray-600">Gaiola</label><input type="number" id="s2-qtd_gaiola" value="${secao2.gaiola || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                            <div><label for="s2-qtd_palete" class="text-xs text-gray-600">Palete</label><input type="number" id="s2-qtd_palete" value="${secao2.palete || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                            <div><label for="s2-qtd_chapatex" class="text-xs text-gray-600">Chapatex</label><input type="number" id="s2-qtd_chapatex" value="${secao2.chapatex || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                        </div>
+    if (etapa === 2) {
+        formHTML = `
+            <fieldset class="space-y-4">
+                <h3 class="font-semibold text-gray-700 border-b pb-2">2° ATIVOS / PRODUTOS DIVERGENTE</h3>
+                <div class="pt-2">
+                    <label class="text-sm font-medium text-gray-700">Ativos retornados (quantidade):</label>
+                    <div class="grid grid-cols-2 gap-x-4 gap-y-3 mt-2">
+                        <div><label for="s2-qtd_cacamba" class="text-xs text-gray-600">Caçamba</label><input type="number" id="s2-qtd_cacamba" value="${secao2.cacamba || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                        <div><label for="s2-qtd_gaiola" class="text-xs text-gray-600">Gaiola</label><input type="number" id="s2-qtd_gaiola" value="${secao2.gaiola || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                        <div><label for="s2-qtd_palete" class="text-xs text-gray-600">Palete</label><input type="number" id="s2-qtd_palete" value="${secao2.palete || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                        <div><label for="s2-qtd_chapatex" class="text-xs text-gray-600">Chapatex</label><input type="number" id="s2-qtd_chapatex" value="${secao2.chapatex || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
                     </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
-                        <div><label class="text-sm font-medium text-gray-700">Produtos conferidos?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div>
-                        <div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" class="mr-2 h-4 w-4" onchange="toggleDivergencia(true)"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" class="mr-2 h-4 w-4" onchange="toggleDivergencia(false)" checked> Não</label></div></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
+                    <div><label class="text-sm font-medium text-gray-700">Produtos conferidos?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div>
+                    <div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" class="mr-2 h-4 w-4" onchange="toggleDivergencia(true)"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" class="mr-2 h-4 w-4" onchange="toggleDivergencia(false)" checked> Não</label></div></div>
+                </div>
+                
+                <div class="border-t pt-4">
+                    <label class="text-sm font-medium text-gray-700">Tem sobra?</label>
+                    <div class="flex space-x-6 mt-2">
+                        <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Sim" class="mr-2 h-4 w-4" onchange="toggleSobra(true)"> Sim</label>
+                        <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Não" class="mr-2 h-4 w-4" onchange="toggleSobra(false)" checked> Não</label>
                     </div>
-                    
-                    <div class="border-t pt-4">
-                        <label class="text-sm font-medium text-gray-700">Tem sobra?</label>
-                        <div class="flex space-x-6 mt-2">
-                            <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Sim" class="mr-2 h-4 w-4" onchange="toggleSobra(true)"> Sim</label>
-                            <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Não" class="mr-2 h-4 w-4" onchange="toggleSobra(false)" checked> Não</label>
-                        </div>
-                    </div>
-                    <div id="sobra-details" class="hidden space-y-4 border-t pt-4">
-                        <div id="sobra-container">
-                            <h4 class="text-sm font-semibold text-gray-600">Detalhes da Sobra</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
-                                <input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                                <div class="flex items-center space-x-2">
-                                    <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                                    <button type="button" onclick="addSobraInput('sobra-container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
-                                </div>
+                </div>
+                <div id="sobra-details" class="hidden space-y-4 border-t pt-4">
+                    <div id="sobra-container">
+                        <h4 class="text-sm font-semibold text-gray-600">Detalhes da Sobra</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+                            <div class="col-span-2 md:col-span-3">
+                                <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                                <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                                <button type="button" onclick="addSobraInput('sobra-container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
                             </div>
                         </div>
                     </div>
-                    
-                    <div id="divergencia-details" class="hidden space-y-4 border-t pt-4">
-                        <div id="divergencia-tipo-dev_total"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Total)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_total')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                        <div id="divergencia-tipo-dev_parcial"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Parcial)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_parcial')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                        <div id="divergencia-tipo-falta"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Falta)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-falta')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                        <div id="divergencia-tipo-retira_oc"><h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Retira O.C)</h4><div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center"><input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><input type="text" placeholder="Cód. Produto" class="produto col-span-2 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><div class="flex items-center space-x-2"><input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDivergenciaInput('divergencia-tipo-retira_oc')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
+                </div>
+                
+                <div id="divergencia-details" class="hidden space-y-4 border-t pt-4">
+                    <div id="divergencia-tipo-dev_total">
+                        <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Total)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+                            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <div class="col-span-2">
+                                <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                                <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                                <button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_total')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
+                            </div>
+                        </div>
                     </div>
-                    <button type="button" onclick="salvarEtapa2()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Admin</button>
-                </fieldset>`;
-        } else if (etapa === 3) {
-            formHTML = `
-                <fieldset class="space-y-4">
-                    <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-                        <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 1 - Documentos)</h4>
-                        <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Tratado" ${radioChecked(secao3.tratativa1_status, 'Tratado')} class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Em tratamento" ${radioChecked(secao3.tratativa1_status, 'Em tratamento')} class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
-                        <div class="mt-2"><label for="tratativa1_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa1_obs" placeholder="Descreva a resolução para os documentos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">${secao3.tratativa1_obs || ''}</textarea></div>
+                    <div id="divergencia-tipo-dev_parcial">
+                         <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Parcial)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+                            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <div class="col-span-2">
+                                <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                                <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                                <button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_parcial')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-                        <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 2 - Produtos)</h4>
-                        <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Tratado" ${radioChecked(secao3.tratativa2_status, 'Tratado')} class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Em tratamento" ${radioChecked(secao3.tratativa2_status, 'Em tratamento')} class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
-                        <div class="mt-2"><label for="tratativa2_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa2_obs" placeholder="Descreva a resolução para os produtos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">${secao3.tratativa2_obs || ''}</textarea></div>
+                    <div id="divergencia-tipo-falta">
+                         <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Falta)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+                            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <div class="col-span-2">
+                                <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                                <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                                <button type="button" onclick="addDivergenciaInput('divergencia-tipo-falta')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
+                            </div>
+                        </div>
                     </div>
+                    <div id="divergencia-tipo-retira_oc">
+                         <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Retira O.C)</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-center">
+                            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <div class="col-span-2">
+                                <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                                <span class="info-produto text-xs text-gray-600 block mt-1 h-4"></span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                                <button type="button" onclick="addDivergenciaInput('divergencia-tipo-retira_oc')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" onclick="salvarEtapa2()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Admin</button>
+            </fieldset>`;
+    } else if (etapa === 3) {
+        formHTML = `
+            <fieldset class="space-y-4">
+                <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+                    <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 1 - Documentos)</h4>
+                    <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Tratado" ${radioChecked(secao3.tratativa1_status, 'Tratado')} class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Em tratamento" ${radioChecked(secao3.tratativa1_status, 'Em tratamento')} class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
+                    <div class="mt-2"><label for="tratativa1_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa1_obs" placeholder="Descreva a resolução para os documentos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">${secao3.tratativa1_obs || ''}</textarea></div>
+                </div>
+                <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+                    <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 2 - Produtos)</h4>
+                    <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Tratado" ${radioChecked(secao3.tratativa2_status, 'Tratado')} class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Em tratamento" ${radioChecked(secao3.tratativa2_status, 'Em tratamento')} class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
+                    <div class="mt-2"><label for="tratativa2_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa2_obs" placeholder="Descreva a resolução para os produtos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">${secao3.tratativa2_obs || ''}</textarea></div>
+                </div>
 
-                    <h3 class="font-semibold text-gray-700 border-b pb-2">3 - Sala (Administrativa)</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                        <div><label for="s3-motorista" class="text-sm font-medium text-gray-700">Motorista</label><input type="text" id="s3-motorista" value="${secao3.motorista || ''}" placeholder="Nome do motorista" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                        <div><label for="s3-ajudante1" class="text-sm font-medium text-gray-700">Ajudante 1</label><input type="text" id="s3-ajudante1" value="${secao3.ajudante1 || ''}" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                        <div class="sm:col-span-2"><label for="s3-ajudante2" class="text-sm font-medium text-gray-700">Ajudante 2 (Opcional)</label><input type="text" id="s3-ajudante2" value="${secao3.ajudante2 || ''}" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    </div>
-                    <div class="border-t pt-4 space-y-3">
-                        <div><label for="s3-obs_arrumacao" class="text-sm font-medium text-gray-700">Orientação quanto à arrumação do baú</label><input type="text" id="s3-obs_arrumacao" value="${secao3.obs_arrumacao || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                        <div><label for="s3-obs_fusion" class="text-sm font-medium text-gray-700">Validação da marcação no Fusion</label><input type="text" id="s3-obs_fusion" value="${secao3.obs_fusion || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                        <div><label for="s3-obs_ocorrencias" class="text-sm font-medium text-gray-700">Lançamento das ocorrências</label><input type="text" id="s3-obs_ocorrencias" value="${secao3.obs_ocorrencias || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                        <div><label for="s3-obs_devolucao" class="text-sm font-medium text-gray-700">Geração das cargas de devolução</label><input type="text" id="s3-obs_devolucao" value="${secao3.obs_devolucao || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                        <div><label for="s3-obs_feedback" class="text-sm font-medium text-gray-700">Feedback da rota</label><input type="text" id="s3-obs_feedback" value="${secao3.obs_feedback || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                        <div><label for="s3-obs_gerais" class="text-sm font-medium text-gray-700">Observações Gerais</label><textarea id="s3-obs_gerais" placeholder="Adicione aqui quaisquer observações gerais..." rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">${secao3.obs_gerais || ''}</textarea></div>
-                        <div><label for="s3-responsavel" class="text-sm font-medium text-gray-700">Responsável Conferência</label><input type="text" id="s3-responsavel" value="${secao3.responsavel || ''}" required placeholder="Nome completo do responsável" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    </div>
-                    <button type="button" onclick="salvarEtapa3()" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors shadow">Concluir Checklist</button>
-                </fieldset>`;
-        }
-
-        formContainer.innerHTML = `
-            <div class="flex justify-between items-start">
-                <h2 class="text-lg font-bold text-gray-800 mb-4">Continuar Checklist - Carga ${secao1.carga}</h2>
-                <button onclick="navigateTo('view-dashboard', 'retorno')" class="text-sm text-gray-600 hover:text-gray-900">&larr; Voltar ao Painel</button>
-            </div>
-            <div class="mb-4 space-y-2">${summaryHTML}</div>
-            <form id="checklist-form">${formHTML}</form>`;
-        
-        navigateTo('view-form', 'retorno');
+                <h3 class="font-semibold text-gray-700 border-b pb-2">3 - Sala (Administrativa)</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                    <div><label for="s3-motorista" class="text-sm font-medium text-gray-700">Motorista</label><input type="text" id="s3-motorista" value="${secao3.motorista || ''}" placeholder="Nome do motorista" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div><label for="s3-ajudante1" class="text-sm font-medium text-gray-700">Ajudante 1</label><input type="text" id="s3-ajudante1" value="${secao3.ajudante1 || ''}" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div class="sm:col-span-2"><label for="s3-ajudante2" class="text-sm font-medium text-gray-700">Ajudante 2 (Opcional)</label><input type="text" id="s3-ajudante2" value="${secao3.ajudante2 || ''}" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                </div>
+                <div class="border-t pt-4 space-y-3">
+                    <div><label for="s3-obs_arrumacao" class="text-sm font-medium text-gray-700">Orientação quanto à arrumação do baú</label><input type="text" id="s3-obs_arrumacao" value="${secao3.obs_arrumacao || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div><label for="s3-obs_fusion" class="text-sm font-medium text-gray-700">Validação da marcação no Fusion</label><input type="text" id="s3-obs_fusion" value="${secao3.obs_fusion || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div><label for="s3-obs_ocorrencias" class="text-sm font-medium text-gray-700">Lançamento das ocorrências</label><input type="text" id="s3-obs_ocorrencias" value="${secao3.obs_ocorrencias || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div><label for="s3-obs_devolucao" class="text-sm font-medium text-gray-700">Geração das cargas de devolução</label><input type="text" id="s3-obs_devolucao" value="${secao3.obs_devolucao || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div><label for="s3-obs_feedback" class="text-sm font-medium text-gray-700">Feedback da rota</label><input type="text" id="s3-obs_feedback" value="${secao3.obs_feedback || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div><label for="s3-obs_gerais" class="text-sm font-medium text-gray-700">Observações Gerais</label><textarea id="s3-obs_gerais" placeholder="Adicione aqui quaisquer observações gerais..." rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">${secao3.obs_gerais || ''}</textarea></div>
+                    <div><label for="s3-responsavel" class="text-sm font-medium text-gray-700">Responsável Conferência</label><input type="text" id="s3-responsavel" value="${secao3.responsavel || ''}" required placeholder="Nome completo do responsável" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                </div>
+                <button type="button" onclick="salvarEtapa3()" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors shadow">Concluir Checklist</button>
+            </fieldset>`;
     }
+
+    formContainer.innerHTML = `
+        <div class="flex justify-between items-start">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Continuar Checklist - Carga ${secao1.carga}</h2>
+            <button onclick="navigateTo('view-dashboard', 'retorno')" class="text-sm text-gray-600 hover:text-gray-900">&larr; Voltar ao Painel</button>
+        </div>
+        <div class="mb-4 space-y-2">${summaryHTML}</div>
+        <form id="checklist-form">${formHTML}</form>`;
+    
+    navigateTo('view-form', 'retorno');
+}
     
     // --- LÓGICA DE SALVAR/ATUALIZAR DADOS - RETORNO ---
     function getDynamicInputValues(containerId) {
@@ -885,33 +981,40 @@
         return Array.from(container.querySelectorAll('input[type="text"]')).map(input => input.value).filter(value => value.trim() !== '');
     }
 
-    function getDivergenciaInputValues(containerId) {
-        const container = document.getElementById(containerId);
-        if(!container) return [];
-        return Array.from(container.querySelectorAll('.nf')).map((nfInput, index) => {
-            const row = nfInput.closest('.grid');
-            const produto = row.querySelector('.produto')?.value || '';
-            const qtd = row.querySelector('.qtd')?.value || '';
-            const nf = nfInput.value || '';
-            if(nf || produto || qtd) {
-                return { nf, produto, qtd };
-            }
-            return null;
-        }).filter(item => item !== null);
-    }
+function getDivergenciaInputValues(containerId) {
+    if(!containerId) return [];
+    const container = document.getElementById(containerId);
+    if(!container) return [];
+
+    return Array.from(container.querySelectorAll('.nf')).map((nfInput, index) => {
+        const row = nfInput.closest('.grid');
+        const produto = row.querySelector('.produto')?.value || '';
+        const descricao = row.querySelector('.info-produto')?.textContent || ''; // Pega a descrição
+        const qtd = row.querySelector('.qtd')?.value || '';
+        const nf = nfInput.value || '';
+
+        if(nf || produto || qtd) {
+            return { nf, produto, descricao, qtd }; // Retorna com a descrição
+        }
+        return null;
+    }).filter(item => item !== null);
+}
     
-    function getSobraInputValues(containerId) {
-        const container = document.getElementById(containerId);
-        if (!container) return [];
-        return Array.from(container.querySelectorAll('.grid.items-center')).map(row => {
-            const produto = row.querySelector('.produto')?.value || '';
-            const qtd = row.querySelector('.qtd')?.value || '';
-            if (produto || qtd) {
-                return { produto, qtd };
-            }
-            return null;
-        }).filter(item => item !== null);
-    }
+function getSobraInputValues(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return [];
+
+    return Array.from(container.querySelectorAll('.grid.items-center')).map(row => {
+        const produto = row.querySelector('.produto')?.value || '';
+        const descricao = row.querySelector('.info-produto')?.textContent || ''; // Pega a descrição
+        const qtd = row.querySelector('.qtd')?.value || '';
+
+        if (produto || qtd) {
+            return { produto, descricao, qtd }; // Retorna com a descrição
+        }
+        return null;
+    }).filter(item => item !== null);
+}
 
 
     function salvarEtapa1() {
@@ -1047,94 +1150,126 @@
     }
     
     // --- LÓGICA DE EXIBIÇÃO E EXCLUSÃO (MASTER) ---
-    function abrirModal(id) {
-        const item = allChecklists.find(c => c.id === id);
-        if (!item) return;
+function abrirModal(id) {
+    const item = allChecklists.find(c => c.id === id);
+    if (!item) return;
 
-        const container = document.getElementById('view-modal-container');
-        const dataFormatada = item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A';
-        const secao1 = item.secao1 || {};
-        const secao2 = item.secao2 || {};
-        const secao3 = item.secao3 || {};
-        
-        let divergenciasHTML = '';
-        if (secao2.carga_divergente === 'Sim') {
-            const tipos = [
-                {label: 'Dev. Total', data: secao2.divergencia_dev_total},
-                {label: 'Dev. Parcial', data: secao2.divergencia_dev_parcial},
-                {label: 'Falta', data: secao2.divergencia_falta},
-                {label: 'Retira O.C', data: secao2.divergencia_retira_oc},
-            ];
-            tipos.forEach(tipo => {
-                if(tipo.data && tipo.data.length > 0) {
-                    divergenciasHTML += `<h5 class="font-semibold mt-1">Divergência: ${tipo.label}</h5>`;
-                    tipo.data.forEach(d => {
-                       divergenciasHTML += `<p class="pl-2">- NF: ${d.nf}, Prod: ${d.produto}, Qtd: ${d.qtd}</p>`;
-                    });
-                }
-            });
-        }
+    const container = document.getElementById('view-modal-container');
+    const dataFormatada = item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString('pt-BR', {timeZone: 'UTC'}) : 'N/A';
+    const secao1 = item.secao1 || {};
+    const secao2 = item.secao2 || {};
+    const secao3 = item.secao3 || {};
 
-        let sobrasHTML = '';
-        if (secao2.tem_sobra === 'Sim' && secao2.sobras && secao2.sobras.length > 0) {
-            sobrasHTML += `<h5 class="font-semibold mt-1">Sobras:</h5>`;
-            secao2.sobras.forEach(s => {
-                sobrasHTML += `<p class="pl-2">- Prod: ${s.produto}, Qtd: ${s.qtd}</p>`;
-            });
-        }
-
-        let secao3HTML = '';
-        if (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Master')) {
-            secao3HTML = `
-                <div class="p-3 bg-gray-100 rounded-lg">
-                    <h4 class="font-bold mb-2 text-base flex justify-between items-center">
-                        <span>Seção 3: Administrativo</span>
-                        <span class="font-normal text-xs text-gray-500">Finalizado por: ${item.finalizadoPor || 'Pendente'}</span>
-                    </h4>
-                    <p><strong>Motorista:</strong> ${secao3.motorista || 'Pendente'}</p>
-                    <p><strong>Ajudante 1:</strong> ${secao3.ajudante1 || 'Pendente'}</p>
-                    <p><strong>Ajudante 2:</strong> ${secao3.ajudante2 || 'N/A'}</p>
-                    <div class="mt-2 pt-2 border-t">
-                        <p><strong>Orientação Arrumação:</strong> ${secao3.obs_arrumacao || 'Pendente'}</p>
-                        <p><strong>Validação Fusion:</strong> ${secao3.obs_fusion || 'Pendente'}</p>
-                        <p><strong>Lançamento Ocorrências:</strong> ${secao3.obs_ocorrencias || 'Pendente'}</p>
-                        <p><strong>Geração Devolução:</strong> ${secao3.obs_devolucao || 'Pendente'}</p>
-                        <p><strong>Feedback Rota:</strong> ${secao3.obs_feedback || 'Pendente'}</p>
-                        <p><strong>Obs. Gerais:</strong> ${secao3.obs_gerais || 'Pendente'}</p>
-                    </div>
-                    <div class="mt-2 pt-2 border-t bg-yellow-50 p-2 rounded">
-                        <h5 class="font-semibold">Tratativa Gestão (Documentos):</h5>
-                        <p><strong>Status:</strong> ${secao3.tratativa1_status || 'Pendente'}</p>
-                        <p><strong>Observação:</strong> ${secao3.tratativa1_obs || 'Nenhuma'}</p>
-                    </div>
-                    <div class="mt-2 bg-yellow-50 p-2 rounded">
-                        <h5 class="font-semibold">Tratativa Gestão (Produtos):</h5>
-                        <p><strong>Status:</strong> ${secao3.tratativa2_status || 'Pendente'}</p>
-                        <p><strong>Observação:</strong> ${secao3.tratativa2_obs || 'Nenhuma'}</p>
-                    </div>
-                    <p class="mt-2 pt-2 border-t"><strong>Responsável Final:</strong> ${secao3.responsavel || 'Pendente'}</p>
-                </div>
-            `;
-        }
-
-
-        container.innerHTML = `
-            <div id="view-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-30 modal-backdrop">
-                <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col modal-content">
-                    <div class="p-4 border-b flex justify-between items-center"><h3 class="text-lg font-bold text-gray-800">Detalhes do Checklist - Carga ${secao1.carga}</h3><button onclick="fecharModal()" class="text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button></div>
-                    <div class="p-6 overflow-y-auto space-y-4 text-sm">
-                        <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 1: Documentos</span><span class="font-normal text-xs text-gray-500">Criado por: ${item.criadoPor || 'N/A'}</span></h4><p><strong>Data:</strong> ${dataFormatada}</p><p><strong>Veículo:</strong> ${secao1.veiculo || 'N/A'}</p><div class="mt-2 pt-2 border-t"><h5 class="font-semibold mb-1">Notas não Conforme:</h5><p><strong>Falta N.F:</strong> ${(secao1.falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Falta Assinatura:</strong> ${(secao1.falta_assinatura || []).join(', ') || 'Nenhuma'}</p><p><strong>Foto Canhoto:</strong> ${(secao1.foto_canhoto || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Falta N.F:</strong> ${(secao1.dev_falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Total:</strong> ${(secao1.dev_total || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Parcial:</strong> ${(secao1.dev_parcial || []).join(', ') || 'Nenhuma'}</p><p><strong>Retira O.C:</strong> ${(secao1.retira_oc || []).join(', ') || 'Nenhuma'}</p></div><div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-3 gap-2"><div><strong>Cartão Comb.:</strong> ${secao1.cartao_combustivel || 'N/A'}</div><div><strong>Celular:</strong> ${secao1.celular || 'N/A'}</div><div><strong>Carregador:</strong> ${secao1.carregador || 'N/A'}</div></div></div>
-                        <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 2: Ativos / Produtos</span><span class="font-normal text-xs text-gray-500">Conferido por: ${item.conferidoPor || 'Pendente'}</span></h4><div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><div><strong>Caçamba:</strong> ${secao2.cacamba !== undefined ? secao2.cacamba : 'Pendente'}</div><div><strong>Gaiola:</strong> ${secao2.gaiola !== undefined ? secao2.gaiola : 'Pendente'}</div><div><strong>Palete:</strong> ${secao2.palete !== undefined ? secao2.palete : 'Pendente'}</div><div><strong>Chapatex:</strong> ${secao2.chapatex !== undefined ? secao2.chapatex : 'Pendente'}</div></div><div class="mt-2 pt-2 border-t"><p><strong>Produtos Conferidos:</strong> ${secao2.produtos_conferidos || 'Pendente'}</p><p><strong>Carga Divergente:</strong> ${secao2.carga_divergente || 'Pendente'}</p><div class="mt-1 pl-4">${divergenciasHTML}</div><p class="mt-2"><strong>Tem Sobra:</strong> ${secao2.tem_sobra || 'Pendente'}</p><div class="mt-1 pl-4">${sobrasHTML}</div></div></div>
-                        ${secao3HTML}
-                    </div>
-                    <div class="p-4 bg-gray-50 border-t text-right"><button onclick="fecharModal()" class="bg-gray-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-600 transition">Fechar</button></div>
-                </div>
-            </div>`;
+    let divergenciasHTML = '';
+    if (secao2.carga_divergente === 'Sim') {
+        const tipos = [
+            {label: 'Dev. Total', data: secao2.divergencia_dev_total},
+            {label: 'Dev. Parcial', data: secao2.divergencia_dev_parcial},
+            {label: 'Falta', data: secao2.divergencia_falta},
+            {label: 'Retira O.C', data: secao2.divergencia_retira_oc},
+        ];
+        tipos.forEach(tipo => {
+            if(tipo.data && tipo.data.length > 0) {
+                divergenciasHTML += `<h5 class="font-semibold mt-1">Divergência: ${tipo.label}</h5>`;
+                tipo.data.forEach(d => {
+                    const descricaoLimpa = (d.descricao || '').replace('Buscando...', '').replace('Erro na busca (verifique a cota)', '');
+                    divergenciasHTML += `<p class="pl-2">- NF: ${d.nf}, Prod: ${d.produto} ${descricaoLimpa ? `- ${descricaoLimpa}` : ''}, Qtd: ${d.qtd}</p>`;
+                });
+            }
+        });
     }
-    
-    function fecharModalConfirmacao() {
-        document.getElementById('confirmation-modal-container').innerHTML = '';
+
+    let sobrasHTML = '';
+    if (secao2.tem_sobra === 'Sim' && secao2.sobras && secao2.sobras.length > 0) {
+        sobrasHTML += `<h5 class="font-semibold mt-1">Sobras:</h5>`;
+        secao2.sobras.forEach(s => {
+            const descricaoLimpa = (s.descricao || '').replace('Buscando...', '').replace('Erro na busca (verifique a cota)', '');
+            sobrasHTML += `<p class="pl-2">- Prod: ${s.produto} ${descricaoLimpa ? `- ${descricaoLimpa}` : ''}, Qtd: ${s.qtd}</p>`;
+        });
     }
+
+    // ===============================================================
+    // NOVO TRECHO INSERIDO PARA BUSCAR E MOSTRAR O RESUMO DA FROTA
+    // ===============================================================
+    let frotaSummaryHTML = '';
+    const cargaNumero = item.secao1.carga;
+    if (cargaNumero) {
+        const checklistFrota = allChecklistsFrota.find(c => c.carga === cargaNumero);
+
+        frotaSummaryHTML = `
+            <div class="p-3 bg-red-50 border border-red-200 rounded-lg text-sm mt-4">
+                <h4 class="font-bold mb-2 text-base text-red-800">Resumo Checklist de Frota Vinculado</h4>`;
+
+        if (checklistFrota) {
+            if (checklistFrota.status === 'Não Conforme') {
+                frotaSummaryHTML += `<p class="mb-2"><strong>Placa:</strong> ${checklistFrota.placa} | <strong>Motorista:</strong> ${checklistFrota.motorista}</p><p class="font-semibold">Itens Não Conformes:</p>`;
+                let naoConformidades = '';
+                frotaItems.forEach(spec => {
+                    const itemData = checklistFrota.itens[spec.id];
+                    if (itemData && itemData.status === 'Não Conforme') {
+                        naoConformidades += `<li class="text-sm">- ${spec.label}: ${itemData.obs || 'Sem observação'}</li>`;
+                    }
+                });
+                frotaSummaryHTML += `<ul class="list-disc list-inside space-y-1">${naoConformidades || '<li>Nenhuma não conformidade detalhada.</li>'}</ul>`;
+            } else {
+                frotaSummaryHTML += `<p class="text-sm text-green-700">Checklist de frota encontrado e está <strong class="uppercase">Conforme</strong>.</p>`;
+            }
+        } else {
+            frotaSummaryHTML += `<p class="text-sm text-gray-500">Nenhum checklist de frota correspondente a esta carga (${cargaNumero}) foi encontrado.</p>`;
+        }
+        frotaSummaryHTML += `</div>`;
+    }
+    // ===============================================================
+    // FIM DO NOVO TRECHO
+    // ===============================================================
+
+    let secao3HTML = '';
+    if (currentUser && (currentUser.role === 'Admin' || currentUser.role === 'Master')) {
+        secao3HTML = `
+            <div class="p-3 bg-gray-100 rounded-lg">
+                <h4 class="font-bold mb-2 text-base flex justify-between items-center">
+                    <span>Seção 3: Administrativo</span>
+                    <span class="font-normal text-xs text-gray-500">Finalizado por: ${item.finalizadoPor || 'Pendente'}</span>
+                </h4>
+                <p><strong>Motorista:</strong> ${secao3.motorista || 'Pendente'}</p>
+                <p><strong>Ajudante 1:</strong> ${secao3.ajudante1 || 'Pendente'}</p>
+                <p><strong>Ajudante 2:</strong> ${secao3.ajudante2 || 'N/A'}</p>
+                <div class="mt-2 pt-2 border-t">
+                    <p><strong>Orientação Arrumação:</strong> ${secao3.obs_arrumacao || 'Pendente'}</p>
+                    <p><strong>Validação Fusion:</strong> ${secao3.obs_fusion || 'Pendente'}</p>
+                    <p><strong>Lançamento Ocorrências:</strong> ${secao3.obs_ocorrencias || 'Pendente'}</p>
+                    <p><strong>Geração Devolução:</strong> ${secao3.obs_devolucao || 'Pendente'}</p>
+                    <p><strong>Feedback Rota:</strong> ${secao3.obs_feedback || 'Pendente'}</p>
+                    <p><strong>Obs. Gerais:</strong> ${secao3.obs_gerais || 'Pendente'}</p>
+                </div>
+                <div class="mt-2 pt-2 border-t bg-yellow-50 p-2 rounded">
+                    <h5 class="font-semibold">Tratativa Gestão (Documentos):</h5>
+                    <p><strong>Status:</strong> ${secao3.tratativa1_status || 'Pendente'}</p>
+                    <p><strong>Observação:</strong> ${secao3.tratativa1_obs || 'Nenhuma'}</p>
+                </div>
+                <div class="mt-2 bg-yellow-50 p-2 rounded">
+                    <h5 class="font-semibold">Tratativa Gestão (Produtos):</h5>
+                    <p><strong>Status:</strong> ${secao3.tratativa2_status || 'Pendente'}</p>
+                    <p><strong>Observação:</strong> ${secao3.tratativa2_obs || 'Nenhuma'}</p>
+                </div>
+                <p class="mt-2 pt-2 border-t"><strong>Responsável Final:</strong> ${secao3.responsavel || 'Pendente'}</p>
+            </div>
+        `;
+    }
+
+    container.innerHTML = `
+        <div id="view-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-30 modal-backdrop">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col modal-content">
+                <div class="p-4 border-b flex justify-between items-center"><h3 class="text-lg font-bold text-gray-800">Detalhes do Checklist - Carga ${secao1.carga}</h3><button onclick="fecharModal()" class="text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button></div>
+                <div class="p-6 overflow-y-auto space-y-4 text-sm">
+                    <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 1: Documentos</span><span class="font-normal text-xs text-gray-500">Criado por: ${item.criadoPor || 'N/A'}</span></h4><p><strong>Data:</strong> ${dataFormatada}</p><p><strong>Veículo:</strong> ${secao1.veiculo || 'N/A'}</p><div class="mt-2 pt-2 border-t"><h5 class="font-semibold mb-1">Notas não Conforme:</h5><p><strong>Falta N.F:</strong> ${(secao1.falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Falta Assinatura:</strong> ${(secao1.falta_assinatura || []).join(', ') || 'Nenhuma'}</p><p><strong>Foto Canhoto:</strong> ${(secao1.foto_canhoto || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Falta N.F:</strong> ${(secao1.dev_falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Total:</strong> ${(secao1.dev_total || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Parcial:</strong> ${(secao1.dev_parcial || []).join(', ') || 'Nenhuma'}</p><p><strong>Retira O.C:</strong> ${(secao1.retira_oc || []).join(', ') || 'Nenhuma'}</p></div><div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-3 gap-2"><div><strong>Cartão Comb.:</strong> ${secao1.cartao_combustivel || 'N/A'}</div><div><strong>Celular:</strong> ${secao1.celular || 'N/A'}</div><div><strong>Carregador:</strong> ${secao1.carregador || 'N/A'}</div></div></div>
+                    <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 2: Ativos / Produtos</span><span class="font-normal text-xs text-gray-500">Conferido por: ${item.conferidoPor || 'Pendente'}</span></h4><div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><div><strong>Caçamba:</strong> ${secao2.cacamba !== undefined ? secao2.cacamba : 'Pendente'}</div><div><strong>Gaiola:</strong> ${secao2.gaiola !== undefined ? secao2.gaiola : 'Pendente'}</div><div><strong>Palete:</strong> ${secao2.palete !== undefined ? secao2.palete : 'Pendente'}</div><div><strong>Chapatex:</strong> ${secao2.chapatex !== undefined ? secao2.chapatex : 'Pendente'}</div></div><div class="mt-2 pt-2 border-t"><p><strong>Produtos Conferidos:</strong> ${secao2.produtos_conferidos || 'Pendente'}</p><p><strong>Carga Divergente:</strong> ${secao2.carga_divergente || 'Pendente'}</p><div class="mt-1 pl-4">${divergenciasHTML}</div><p class="mt-2"><strong>Tem Sobra:</strong> ${secao2.tem_sobra || 'Pendente'}</p><div class="mt-1 pl-4">${sobrasHTML}</div></div>
+                    ${frotaSummaryHTML} ${secao3HTML}
+                </div>
+                <div class="p-4 bg-gray-50 border-t text-right"><button onclick="fecharModal()" class="bg-gray-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-600 transition">Fechar</button></div>
+            </div>
+        </div>`;
+}
 
     function abrirModalConfirmacaoExclusao(id, type) {
         const container = document.getElementById('confirmation-modal-container');
@@ -1405,83 +1540,94 @@
     }
 
     // --- ESTATÍSTICAS, PAGINAÇÃO E FILTROS - RETORNO ---
-     function updateStats(data) {
-        document.getElementById('stats-total').textContent = data.length;
-        document.getElementById('stats-aguardando-conferencia').textContent = data.filter(c => c.status === 'Aguardando Conferência').length;
-        document.getElementById('stats-aguardando-admin').textContent = data.filter(c => c.status === 'Aguardando Admin').length;
-        document.getElementById('stats-em-tratamento').textContent = data.filter(c => c.status === 'Em Tratamento').length;
-        document.getElementById('stats-concluido').textContent = data.filter(c => c.status === 'Concluído').length;
+function updateStats(data) {
+    // O card "TOTAL" sempre mostrará o número da coleção inteira.
+    document.getElementById('stats-total').textContent = allChecklists.length;
+
+    // Os outros cards mostrarão os dados baseados no filtro aplicado.
+    document.getElementById('stats-periodo').textContent = data.length;
+    document.getElementById('stats-aguardando-conferencia').textContent = data.filter(c => c.status === 'Aguardando Conferência').length;
+    document.getElementById('stats-aguardando-admin').textContent = data.filter(c => c.status === 'Aguardando Admin').length;
+    document.getElementById('stats-em-tratamento').textContent = data.filter(c => c.status === 'Em Tratamento').length;
+    document.getElementById('stats-concluido').textContent = data.filter(c => c.status === 'Concluído').length;
+}
+
+ async function fetchChecklistsPage(page = 1, reset = false) {
+    if (reset) {
+        page = 1;
+        pageStartCursors = [null];
     }
+    currentPage = page;
 
-    async function fetchChecklistsPage(page = 1, reset = false) {
-        if (reset) {
-            page = 1;
-            pageStartCursors = [null];
-        }
-        currentPage = page;
+    const tabelaBody = document.getElementById('tabela-checklists');
+    tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Carregando dados...</div></td></tr>`;
+    
+    try {
+        const busca = document.getElementById('filtro-busca').value.toLowerCase();
+        const status = document.getElementById('filtro-status').value;
+        const dataInicio = document.getElementById('filtro-data-inicio').value;
+        const dataFim = document.getElementById('filtro-data-fim').value;
 
-        const tabelaBody = document.getElementById('tabela-checklists');
-        tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Carregando dados...</div></td></tr>`;
-        
-        try {
-            const busca = document.getElementById('filtro-busca').value.toLowerCase();
-            const status = document.getElementById('filtro-status').value;
-            const dataInicio = document.getElementById('filtro-data-inicio').value;
-            const dataFim = document.getElementById('filtro-data-fim').value;
-
-            if (busca || status || dataInicio || dataFim) {
-                 const filteredData = allChecklists.filter(item => {
-                    const matchBusca = !busca || 
-                        (item.secao1 && item.secao1.carga && item.secao1.carga.toLowerCase().includes(busca)) ||
-                        (item.secao1 && item.secao1.veiculo && item.secao1.veiculo.toLowerCase().includes(busca));
-                    const matchStatus = !status || item.status === status;
-                    let matchData = true;
-                    if ((dataInicio || dataFim) && item.createdAt) {
-                        const itemDate = item.createdAt.toDate();
-                        itemDate.setHours(0, 0, 0, 0); // Normaliza a data do item
-
-                        if (dataInicio && itemDate < new Date(dataInicio + 'T00:00:00')) {
-                            matchData = false;
-                        }
-                        if (dataFim && itemDate > new Date(dataFim + 'T00:00:00')) {
-                            matchData = false;
-                        }
-                    } else if ((dataInicio || dataFim) && !item.createdAt) {
-                         matchData = false;
+        // Se qualquer filtro estiver ativo, aplicamos a lógica de filtragem local
+        if (busca || status || dataInicio || dataFim) {
+            const filteredData = allChecklists.filter(item => {
+                const matchBusca = !busca || 
+                    (item.secao1 && item.secao1.carga && item.secao1.carga.toLowerCase().includes(busca)) ||
+                    (item.secao1 && item.secao1.veiculo && item.secao1.veiculo.toLowerCase().includes(busca));
+                
+                const matchStatus = !status || item.status === status;
+                
+                let matchData = true;
+                if ((dataInicio || dataFim) && item.createdAt && item.createdAt.toDate) {
+                    const itemDate = item.createdAt.toDate();
+                    
+                    if (dataInicio && itemDate < new Date(dataInicio + 'T00:00:00Z')) {
+                        matchData = false;
                     }
-                    return matchBusca && matchStatus && matchData;
-                });
-                renderizarTabela(filteredData);
-                document.getElementById('pagination-controls').style.display = 'none';
-                return;
-            }
+                    if (dataFim && itemDate > new Date(dataFim + 'T23:59:59Z')) {
+                        matchData = false;
+                    }
+                } else if ((dataInicio || dataFim) && !item.createdAt) {
+                    matchData = false;
+                }
+                return matchBusca && matchStatus && matchData;
+            });
             
-            document.getElementById('pagination-controls').style.display = 'flex';
-            let query = checklistsCollection.orderBy("createdAt", "desc");
-            const cursor = pageStartCursors[currentPage - 1];
-            if (cursor) {
-                query = query.startAfter(cursor);
-            }
-
-            query = query.limit(ITEMS_PER_PAGE);
-            
-            const snapshot = await query.get();
-            const pageData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            lastFetchedPageSize = snapshot.size;
-
-            if (!snapshot.empty) {
-                const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-                pageStartCursors[currentPage] = lastDoc;
-            }
-            
-            renderizarTabela(pageData);
-            updatePaginationButtons();
-
-        } catch (error) {
-            console.error("Erro ao buscar checklists: ", error);
-            tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500">Erro ao carregar os dados.</td></tr>`;
+            updateStats(filteredData); // ATUALIZA OS CARDS COM OS DADOS FILTRADOS
+            renderizarTabela(filteredData);
+            document.getElementById('pagination-controls').style.display = 'none';
+            return;
         }
+        
+        // Se não houver filtros, reseta os cards para os valores totais e busca com paginação
+        updateStats(allChecklists);
+        document.getElementById('pagination-controls').style.display = 'flex';
+        
+        let query = checklistsCollection.orderBy("createdAt", "desc");
+        const cursor = pageStartCursors[currentPage - 1];
+        if (cursor) {
+            query = query.startAfter(cursor);
+        }
+
+        query = query.limit(ITEMS_PER_PAGE);
+        
+        const snapshot = await query.get();
+        const pageData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        lastFetchedPageSize = snapshot.size;
+
+        if (!snapshot.empty) {
+            const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+            pageStartCursors[currentPage] = lastDoc;
+        }
+        
+        renderizarTabela(pageData);
+        updatePaginationButtons();
+
+    } catch (error) {
+        console.error("Erro ao buscar checklists: ", error);
+        tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500">Erro ao carregar os dados.</td></tr>`;
     }
+}
     
     function updatePaginationButtons() {
         const prevBtn = document.getElementById('prev-page-btn');
@@ -1603,65 +1749,74 @@
         });
     }
 
-     function updateStatsFrota(data) {
-        document.getElementById('stats-total-frota').textContent = data.length;
-        document.getElementById('stats-conforme-frota').textContent = data.filter(c => c.status === 'Conforme').length;
-        document.getElementById('stats-nao-conforme-frota').textContent = data.filter(c => c.status === 'Não Conforme').length;
+function updateStatsFrota(data) {
+    // O card "Total Frota" sempre mostrará o número da coleção inteira.
+    document.getElementById('stats-total-frota').textContent = allChecklistsFrota.length;
+
+    // Os outros cards mostrarão os dados baseados no filtro aplicado.
+    document.getElementById('stats-periodo-frota').textContent = data.length;
+    document.getElementById('stats-conforme-frota').textContent = data.filter(c => c.status === 'Conforme').length;
+    document.getElementById('stats-nao-conforme-frota').textContent = data.filter(c => c.status === 'Não Conforme').length;
+}
+
+async function fetchChecklistsPageFrota(page = 1, reset = false) {
+    if (reset) {
+        page = 1;
+        pageStartCursorsFrota = [null];
     }
+    currentPageFrota = page;
 
-    async function fetchChecklistsPageFrota(page = 1, reset = false) {
-        if (reset) {
-            page = 1;
-            pageStartCursorsFrota = [null];
+    const tabelaBody = document.getElementById('tabela-checklists-frota');
+    tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Carregando dados...</div></td></tr>`;
+    
+    try {
+        const buscaFrota = document.getElementById('filtro-busca-frota').value.toLowerCase();
+        const dataInicioFrota = document.getElementById('filtro-data-inicio-frota').value;
+        const dataFimFrota = document.getElementById('filtro-data-fim-frota').value;
+
+        if (buscaFrota || dataInicioFrota || dataFimFrota) {
+            const filteredData = allChecklistsFrota.filter(item => {
+                const matchBusca = !buscaFrota || 
+                    (item.placa && item.placa.toLowerCase().includes(buscaFrota)) ||
+                    (item.carga && item.carga.toLowerCase().includes(buscaFrota));
+                const matchData = (!dataInicioFrota || item.data >= dataInicioFrota) && (!dataFimFrota || item.data <= dataFimFrota);
+                return matchBusca && matchData;
+            });
+            
+            updateStatsFrota(filteredData); // ATUALIZA OS CARDS COM OS DADOS FILTRADOS
+            renderizarTabelaFrota(filteredData);
+            document.getElementById('pagination-controls-frota').style.display = 'none';
+            return;
         }
-        currentPageFrota = page;
 
-        const tabelaBody = document.getElementById('tabela-checklists-frota');
-        tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Carregando dados...</div></td></tr>`;
+        // Se não houver filtros, reseta os cards para os valores totais e busca com paginação
+        updateStatsFrota(allChecklistsFrota);
+        document.getElementById('pagination-controls-frota').style.display = 'flex';
         
-        try {
-            const buscaFrota = document.getElementById('filtro-busca-frota').value.toLowerCase();
-            const dataInicioFrota = document.getElementById('filtro-data-inicio-frota').value;
-            const dataFimFrota = document.getElementById('filtro-data-fim-frota').value;
-
-            if (buscaFrota || dataInicioFrota || dataFimFrota) {
-                const filteredData = allChecklistsFrota.filter(item => {
-                    const matchBusca = !buscaFrota || 
-                        (item.placa && item.placa.toLowerCase().includes(buscaFrota)) ||
-                        (item.carga && item.carga.toLowerCase().includes(buscaFrota));
-                    const matchData = (!dataInicioFrota || item.data >= dataInicioFrota) && (!dataFimFrota || item.data <= dataFimFrota);
-                    return matchBusca && matchData;
-                });
-                renderizarTabelaFrota(filteredData);
-                document.getElementById('pagination-controls-frota').style.display = 'none';
-                return;
-            }
-
-            document.getElementById('pagination-controls-frota').style.display = 'flex';
-            let query = checklistsFrotaCollection.orderBy("createdAt", "desc");
-            const cursor = pageStartCursorsFrota[currentPageFrota - 1];
-            if (cursor) {
-                query = query.startAfter(cursor);
-            }
-            query = query.limit(ITEMS_PER_PAGE);
-            
-            const snapshot = await query.get();
-            const pageData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            lastFetchedPageSizeFrota = snapshot.size;
-
-            if (!snapshot.empty) {
-                const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-                pageStartCursorsFrota[currentPageFrota] = lastDoc;
-            }
-            
-            renderizarTabelaFrota(pageData);
-            updatePaginationButtonsFrota();
-
-        } catch (error) {
-            console.error("Erro ao buscar checklists de frota: ", error);
-            tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-red-500">Erro ao carregar os dados.</td></tr>`;
+        let query = checklistsFrotaCollection.orderBy("createdAt", "desc");
+        const cursor = pageStartCursorsFrota[currentPageFrota - 1];
+        if (cursor) {
+            query = query.startAfter(cursor);
         }
+        query = query.limit(ITEMS_PER_PAGE);
+        
+        const snapshot = await query.get();
+        const pageData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        lastFetchedPageSizeFrota = snapshot.size;
+
+        if (!snapshot.empty) {
+            const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+            pageStartCursorsFrota[currentPageFrota] = lastDoc;
+        }
+        
+        renderizarTabelaFrota(pageData);
+        updatePaginationButtonsFrota();
+
+    } catch (error) {
+        console.error("Erro ao buscar checklists de frota: ", error);
+        tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-red-500">Erro ao carregar os dados.</td></tr>`;
     }
+}
 
     function updatePaginationButtonsFrota() {
         document.getElementById('prev-page-btn-frota').disabled = currentPageFrota === 1;
@@ -1677,31 +1832,7 @@
 
 
     // --- FORMULÁRIO E SALVAMENTO ---
-    const frotaItems = [
-        { id: 'cinto_seguranca', label: 'Cinto de Segurança', section: 'Estrutura e Componentes' },
-        { id: 'placa_visivel', label: 'Placa: Visível e Legível', section: 'Estrutura e Componentes' },
-        { id: 'parabrisa_trincado', label: 'Parabrisa: Sem Trincados', section: 'Estrutura e Componentes' },
-        { id: 'retrovisores', label: 'Retrovisores', section: 'Estrutura e Componentes' },
-        { id: 'pneus_calibrados', label: 'Pneus: Calibrados, sem desgastes excessivos, corte ou bolhas (incluindo estepe)', section: 'Estrutura e Componentes' },
-        { id: 'parachoque_protetores', label: 'Para-choque: Protetores de rodas, estrutura e faixa reflexiva (em ordem e bom estado)', section: 'Estrutura e Componentes' },
-        { id: 'ausencia_vazamentos', label: 'Ausência de Vazamentos', section: 'Estrutura e Componentes' },
-        { id: 'dois_carrinhos', label: 'Dois Carrinhos', section: 'Estrutura e Componentes' },
-        { id: 'triangulo_estepe', label: 'Possui: Triângulo e Estepe (Perguntar ao mototista)', section: 'Equipamentos de Proteção e Emergência' },
-        { id: 'farois_dianteiros', label: 'Faróis Dianteiros: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
-        { id: 'lanternas_dianteiras', label: 'Lanternas Dianteiras: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
-        { id: 'setas_dianteiras', label: 'Setas Dianteiras: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
-        { id: 'buzina', label: 'Buzina: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
-        { id: 'luz_placa_traseira', label: 'Luz da Placa Traseira: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
-        { id: 'lanternas_traseiras', label: 'Lanternas Traseiras: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
-        { id: 'setas_traseiras', label: 'Setas Traseiras: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
-        { id: 'luz_re', label: 'Luz de Ré: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
-        { id: 'sirene_re', label: 'Sirene de Ré: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
-        { id: 'luz_freio', label: 'Luz de Freio: Funcionando corretamente', section: 'Sistema de Iluminação e Sinalização Luminosa' },
-        { id: 'documentacao', label: 'Documentação (Licenciamento anual, licenciamento sanitário, dedetização e certificado do tacógrafo)', section: 'Documentação do Veículo' },
-        { id: 'tacografo_velocimetro', label: 'Tacógrafo e Velocímetro: Funcionando corretamente', section: 'Documentação do Veículo' },
-        { id: 'termo_king', label: 'Termo King: Funcionando corretamente (0º a 13º)', section: 'Documentação do Veículo' },
-        { id: 'veiculo_abastecido', label: 'Veículo Abastecido', section: 'Outros' }
-    ];
+
 
     function iniciarNovoChecklistFrota() {
         const formContainer = document.getElementById('form-container-frota');
@@ -2039,7 +2170,42 @@
             });
         });
     }
+async function buscarProduto(event) {
+    const inputCodigo = event.target;
+    const codigo = inputCodigo.value.trim();
+    
+    const parentRow = inputCodigo.closest('.grid');
+    if (!parentRow) return;
 
+    const spanInfo = parentRow.querySelector('.info-produto'); 
+    if (!spanInfo) return;
+
+    if (codigo.length > 2) {
+        spanInfo.textContent = 'Buscando...';
+        try {
+            const produtoDoc = await db.collection('produtos').doc(codigo).get();
+            if (produtoDoc.exists) {
+                const data = produtoDoc.data();
+                const descricao = data.descricao || 'Descrição não encontrada';
+                const embalagem = data.embalagem || ''; 
+                
+                spanInfo.textContent = embalagem ? `${descricao} (${embalagem})` : descricao;
+                
+                spanInfo.classList.remove('text-red-500');
+            } else {
+                spanInfo.textContent = 'Produto não encontrado';
+                spanInfo.classList.add('text-red-500');
+            }
+        } catch (error) {
+            console.error("Erro ao buscar produto:", error);
+            // Se for erro de cota, a mensagem será esta
+            spanInfo.textContent = 'Erro na busca (verifique a cota)'; 
+            spanInfo.classList.add('text-red-500');
+        }
+    } else {
+        spanInfo.textContent = ''; 
+    }
+}
     </script>
 </body>
 </html>
