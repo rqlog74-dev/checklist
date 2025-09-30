@@ -335,8 +335,6 @@
     let currentUser = null; 
     let veiculosList = [];
     let currentEditingId = null;
-    var tiposEmbalagemList = []; 
-    let metaDiariaRetorno = 0;  
 
     // Estado Checklist Retorno
     let allChecklists = [];
@@ -474,11 +472,11 @@
     // ===============================================================
     //                LÓGICA DE RENDERIZAÇÃO, FORMULÁRIOS E AÇÕES
     // ===============================================================
-function showEmbalagemSuggestions(event) {
+    function showEmbalagemSuggestions(event) {
     const input = event.target;
     const suggestionsContainer = input.nextElementSibling;
     const value = input.value.toLowerCase();
-
+    
     suggestionsContainer.innerHTML = '';
     if (value.length === 0) {
         suggestionsContainer.classList.add('hidden');
@@ -512,36 +510,6 @@ document.addEventListener('click', (event) => {
         document.querySelectorAll('.embalagem-suggestions').forEach(box => box.classList.add('hidden'));
     }
 });
-
-async function buscarProduto(event) {
-    const inputCodigo = event.target;
-    const parentRow = inputCodigo.closest('.grid');
-    if (!parentRow) return;
-
-    const inputDescricao = parentRow.querySelector('.descricao-produto'); 
-    if (!inputDescricao) return;
-
-    const codigo = inputCodigo.value.trim();
-    if (codigo.length > 2) {
-        inputDescricao.value = 'Buscando...';
-        try {
-            const produtoDoc = await db.collection('produtos').doc(codigo).get();
-            if (produtoDoc.exists) {
-                inputDescricao.value = produtoDoc.data().descricao;
-                inputDescricao.classList.remove('text-red-500');
-            } else {
-                inputDescricao.value = 'Produto não encontrado';
-                inputDescricao.classList.add('text-red-500');
-            }
-        } catch (error) {
-            console.error("Erro ao buscar produto:", error);
-            inputDescricao.value = 'Erro na busca';
-            inputDescricao.classList.add('text-red-500');
-        }
-    } else {
-        inputDescricao.value = '';
-    }
-}
     // --- NOTIFICAÇÕES (TOAST) ---
     function showToast(message, type = 'success') {
         const container = document.getElementById('toast-container');
@@ -2229,6 +2197,36 @@ async function fetchChecklistsPageFrota(page = 1, reset = false) {
             });
         });
     }
+async function buscarProduto(event) {
+    const inputCodigo = event.target;
+    const parentRow = inputCodigo.closest('.grid');
+    if (!parentRow) return;
+
+    // Agora procuramos por um INPUT com a classe 'descricao-produto'
+    const inputDescricao = parentRow.querySelector('.descricao-produto'); 
+    if (!inputDescricao) return;
+
+    const codigo = inputCodigo.value.trim();
+    if (codigo.length > 2) {
+        inputDescricao.value = 'Buscando...'; // Usamos .value
+        try {
+            const produtoDoc = await db.collection('produtos').doc(codigo).get();
+            if (produtoDoc.exists) {
+                inputDescricao.value = produtoDoc.data().descricao; // Usamos .value
+                inputDescricao.classList.remove('text-red-500');
+            } else {
+                inputDescricao.value = 'Produto não encontrado'; // Usamos .value
+                inputDescricao.classList.add('text-red-500');
+            }
+        } catch (error) {
+            console.error("Erro ao buscar produto:", error);
+            inputDescricao.value = 'Erro na busca'; // Usamos .value
+            inputDescricao.classList.add('text-red-500');
+        }
+    } else {
+        inputDescricao.value = ''; // Usamos .value
+    }
+}
     </script>
 </body>
 </html>
