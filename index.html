@@ -328,6 +328,8 @@
     const checklistsFrotaCollection = db.collection("checklists_frota");
     const usersCollection = db.collection("users");
     const veiculosCollection = db.collection("veiculos");
+    const configuracoesCollection = db.collection("configuracoes");
+    const tiposEmbalagemCollection = db.collection("tiposEmbalagem"); 
 
     // ===============================================================
     //                          ESTADO GLOBAL DO APP
@@ -335,6 +337,8 @@
     let currentUser = null; 
     let veiculosList = [];
     let currentEditingId = null;
+    var tiposEmbalagemList = []; 
+    let metaDiariaRetorno = 0;  
 
     // Estado Checklist Retorno
     let allChecklists = [];
@@ -402,42 +406,55 @@
     
     auth.onAuthStateChanged(user => {
         if (user) {
-            Promise.all([
-                usersCollection.doc(user.uid).get(),
-                veiculosCollection.get()
-            ]).then(([userDoc, veiculosSnapshot]) => {
-                if (userDoc.exists) {
-                    currentUser = { uid: user.uid, email: user.email, role: userDoc.data().role, name: userDoc.data().name };
-                    veiculosList = veiculosSnapshot.docs.map(doc => doc.data().nome);
+Promise.all([
+    usersCollection.doc(user.uid).get(),
+    veiculosCollection.get(),
+    configuracoesCollection.doc('metas').get(),
+    tiposEmbalagemCollection.orderBy('nome').get()
+]).then(([userDoc, veiculosSnapshot, metasDoc, embalagensSnapshot]) => {
+    if (userDoc.exists) {
+        currentUser = { uid: user.uid, email: user.email, role: userDoc.data().role, name: userDoc.data().name };
+        veiculosList = veiculosSnapshot.docs.map(doc => doc.data().nome);
 
-                    document.getElementById('login-view').style.display = 'none';
-                    document.getElementById('app-container').classList.remove('hidden');
-                    document.getElementById('current-user-name').textContent = currentUser.name;
-                    document.getElementById('current-user-role').textContent = currentUser.role;
-                    
-                    updatePermissions();
+        tiposEmbalagemList = embalagensSnapshot.docs.map(doc => doc.data().nome);
+        console.log('DEBUG: Lista de embalagens carregada do Firebase:', tiposEmbalagemList);
 
-                    // Listeners e fetches iniciais
-                    listenForStats(); 
-                    fetchChecklistsPage(1, true); 
-                    listenForStatsFrota();
-                    fetchChecklistsPageFrota(1, true);
+        if (metasDoc.exists) {
+            const hojeString = new Date().toISOString().split('T')[0];
+            const dataMetaSalva = metasDoc.data().dataMeta;
+            if (dataMetaSalva === hojeString) {
+                metaDiariaRetorno = metasDoc.data().metaDiariaRetorno || 0;
+            }
+        }
 
-                    // Mostra a seção correta baseada no perfil
-                    if (currentUser.role === 'Frota') {
-                        showAppSection('frota');
-                    } else {
-                        showAppSection('retorno');
-                    }
-                } else {
-                    showToast('Perfil de usuário não configurado.', 'error');
-                    logout();
-                }
-            }).catch(error => {
-                console.error("Erro no Promise.all:", error);
-                showToast('Erro ao carregar dados iniciais.', 'error');
-                logout();
-            });
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('app-container').classList.remove('hidden');
+        document.getElementById('current-user-name').textContent = currentUser.name;
+        document.getElementById('current-user-role').textContent = currentUser.role;
+        
+        updatePermissions();
+
+        // Listeners e fetches iniciais
+        listenForStats(); 
+        fetchChecklistsPage(1, true); 
+        listenForStatsFrota();
+        fetchChecklistsPageFrota(1, true);
+
+        // Mostra a seção correta baseada no perfil
+        if (currentUser.role === 'Frota') {
+            showAppSection('frota');
+        } else {
+            showAppSection('retorno');
+        }
+    } else {
+        showToast('Perfil de usuário não configurado.', 'error');
+        logout();
+    }
+}).catch(error => {
+    console.error("Erro no Promise.all:", error);
+    showToast('Erro ao carregar dados iniciais.', 'error');
+    logout();
+});
         } else {
             currentUser = null;
             document.getElementById('login-view').style.display = 'flex';
@@ -472,11 +489,11 @@
     // ===============================================================
     //                LÓGICA DE RENDERIZAÇÃO, FORMULÁRIOS E AÇÕES
     // ===============================================================
-    function showEmbalagemSuggestions(event) {
+function showEmbalagemSuggestions(event) {
     const input = event.target;
     const suggestionsContainer = input.nextElementSibling;
     const value = input.value.toLowerCase();
-    
+
     suggestionsContainer.innerHTML = '';
     if (value.length === 0) {
         suggestionsContainer.classList.add('hidden');
@@ -510,6 +527,36 @@ document.addEventListener('click', (event) => {
         document.querySelectorAll('.embalagem-suggestions').forEach(box => box.classList.add('hidden'));
     }
 });
+
+async function buscarProduto(event) {
+    const inputCodigo = event.target;
+    const parentRow = inputCodigo.closest('.grid');
+    if (!parentRow) return;
+
+    const inputDescricao = parentRow.querySelector('.descricao-produto'); 
+    if (!inputDescricao) return;
+
+    const codigo = inputCodigo.value.trim();
+    if (codigo.length > 2) {
+        inputDescricao.value = 'Buscando...';
+        try {
+            const produtoDoc = await db.collection('produtos').doc(codigo).get();
+            if (produtoDoc.exists) {
+                inputDescricao.value = produtoDoc.data().descricao;
+                inputDescricao.classList.remove('text-red-500');
+            } else {
+                inputDescricao.value = 'Produto não encontrado';
+                inputDescricao.classList.add('text-red-500');
+            }
+        } catch (error) {
+            console.error("Erro ao buscar produto:", error);
+            inputDescricao.value = 'Erro na busca';
+            inputDescricao.classList.add('text-red-500');
+        }
+    } else {
+        inputDescricao.value = '';
+    }
+}
     // --- NOTIFICAÇÕES (TOAST) ---
     function showToast(message, type = 'success') {
         const container = document.getElementById('toast-container');
@@ -2197,36 +2244,6 @@ async function fetchChecklistsPageFrota(page = 1, reset = false) {
             });
         });
     }
-async function buscarProduto(event) {
-    const inputCodigo = event.target;
-    const parentRow = inputCodigo.closest('.grid');
-    if (!parentRow) return;
-
-    // Agora procuramos por um INPUT com a classe 'descricao-produto'
-    const inputDescricao = parentRow.querySelector('.descricao-produto'); 
-    if (!inputDescricao) return;
-
-    const codigo = inputCodigo.value.trim();
-    if (codigo.length > 2) {
-        inputDescricao.value = 'Buscando...'; // Usamos .value
-        try {
-            const produtoDoc = await db.collection('produtos').doc(codigo).get();
-            if (produtoDoc.exists) {
-                inputDescricao.value = produtoDoc.data().descricao; // Usamos .value
-                inputDescricao.classList.remove('text-red-500');
-            } else {
-                inputDescricao.value = 'Produto não encontrado'; // Usamos .value
-                inputDescricao.classList.add('text-red-500');
-            }
-        } catch (error) {
-            console.error("Erro ao buscar produto:", error);
-            inputDescricao.value = 'Erro na busca'; // Usamos .value
-            inputDescricao.classList.add('text-red-500');
-        }
-    } else {
-        inputDescricao.value = ''; // Usamos .value
-    }
-}
     </script>
 </body>
 </html>
