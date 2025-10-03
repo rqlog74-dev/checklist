@@ -328,8 +328,6 @@
     const checklistsFrotaCollection = db.collection("checklists_frota");
     const usersCollection = db.collection("users");
     const veiculosCollection = db.collection("veiculos");
-    const configuracoesCollection = db.collection("configuracoes");
-    const tiposEmbalagemCollection = db.collection("tiposEmbalagem"); 
 
     // ===============================================================
     //                          ESTADO GLOBAL DO APP
@@ -406,55 +404,42 @@
     
     auth.onAuthStateChanged(user => {
         if (user) {
-Promise.all([
-    usersCollection.doc(user.uid).get(),
-    veiculosCollection.get(),
-    configuracoesCollection.doc('metas').get(),
-    tiposEmbalagemCollection.orderBy('nome').get()
-]).then(([userDoc, veiculosSnapshot, metasDoc, embalagensSnapshot]) => {
-    if (userDoc.exists) {
-        currentUser = { uid: user.uid, email: user.email, role: userDoc.data().role, name: userDoc.data().name };
-        veiculosList = veiculosSnapshot.docs.map(doc => doc.data().nome);
+            Promise.all([
+                usersCollection.doc(user.uid).get(),
+                veiculosCollection.get()
+            ]).then(([userDoc, veiculosSnapshot]) => {
+                if (userDoc.exists) {
+                    currentUser = { uid: user.uid, email: user.email, role: userDoc.data().role, name: userDoc.data().name };
+                    veiculosList = veiculosSnapshot.docs.map(doc => doc.data().nome);
 
-        tiposEmbalagemList = embalagensSnapshot.docs.map(doc => doc.data().nome);
-        console.log('DEBUG: Lista de embalagens carregada do Firebase:', tiposEmbalagemList);
+                    document.getElementById('login-view').style.display = 'none';
+                    document.getElementById('app-container').classList.remove('hidden');
+                    document.getElementById('current-user-name').textContent = currentUser.name;
+                    document.getElementById('current-user-role').textContent = currentUser.role;
+                    
+                    updatePermissions();
 
-        if (metasDoc.exists) {
-            const hojeString = new Date().toISOString().split('T')[0];
-            const dataMetaSalva = metasDoc.data().dataMeta;
-            if (dataMetaSalva === hojeString) {
-                metaDiariaRetorno = metasDoc.data().metaDiariaRetorno || 0;
-            }
-        }
+                    // Listeners e fetches iniciais
+                    listenForStats(); 
+                    fetchChecklistsPage(1, true); 
+                    listenForStatsFrota();
+                    fetchChecklistsPageFrota(1, true);
 
-        document.getElementById('login-view').style.display = 'none';
-        document.getElementById('app-container').classList.remove('hidden');
-        document.getElementById('current-user-name').textContent = currentUser.name;
-        document.getElementById('current-user-role').textContent = currentUser.role;
-        
-        updatePermissions();
-
-        // Listeners e fetches iniciais
-        listenForStats(); 
-        fetchChecklistsPage(1, true); 
-        listenForStatsFrota();
-        fetchChecklistsPageFrota(1, true);
-
-        // Mostra a seção correta baseada no perfil
-        if (currentUser.role === 'Frota') {
-            showAppSection('frota');
-        } else {
-            showAppSection('retorno');
-        }
-    } else {
-        showToast('Perfil de usuário não configurado.', 'error');
-        logout();
-    }
-}).catch(error => {
-    console.error("Erro no Promise.all:", error);
-    showToast('Erro ao carregar dados iniciais.', 'error');
-    logout();
-});
+                    // Mostra a seção correta baseada no perfil
+                    if (currentUser.role === 'Frota') {
+                        showAppSection('frota');
+                    } else {
+                        showAppSection('retorno');
+                    }
+                } else {
+                    showToast('Perfil de usuário não configurado.', 'error');
+                    logout();
+                }
+            }).catch(error => {
+                console.error("Erro no Promise.all:", error);
+                showToast('Erro ao carregar dados iniciais.', 'error');
+                logout();
+            });
         } else {
             currentUser = null;
             document.getElementById('login-view').style.display = 'flex';
@@ -489,10 +474,17 @@ Promise.all([
     // ===============================================================
     //                LÓGICA DE RENDERIZAÇÃO, FORMULÁRIOS E AÇÕES
     // ===============================================================
+    function toggleInputSection(checkbox, containerId) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.style.display = checkbox.value === 'Sim' ? 'block' : 'none';
+    }
+}
 function showEmbalagemSuggestions(event) {
     const input = event.target;
     const suggestionsContainer = input.nextElementSibling;
     const value = input.value.toLowerCase();
+
 
     suggestionsContainer.innerHTML = '';
     if (value.length === 0) {
@@ -766,45 +758,71 @@ function addSobraInput(containerId) {
 }
 
     // --- LÓGICA DOS FORMULÁRIOS (GERAÇÃO DINÂMICA) - RETORNO ---
-    function iniciarNovoChecklist() {
-        currentEditingId = null;
-        const formContainer = document.getElementById('form-container');
-        formContainer.innerHTML = `
-            <div class="flex justify-between items-start">
-                <h2 class="text-lg font-bold text-gray-800 mb-4">Novo Checklist de Retorno</h2>
-                <button onclick="navigateTo('view-dashboard', 'retorno')" class="text-sm text-gray-600 hover:text-gray-900">&larr; Voltar ao Painel</button>
-            </div>
-            <form id="checklist-form">
-                <fieldset class="space-y-4">
-                    <h3 class="font-semibold text-gray-700 border-b pb-2">1 - Documentos</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div><label for="s1-data" class="text-sm font-medium text-gray-700">Data</label><input type="date" id="s1-data" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                        <div><label for="s1-numero_carga" class="text-sm font-medium text-gray-700">Número da Carga</label><input type="text" id="s1-numero_carga" placeholder="Insira o número" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                        <div class="sm:col-span-2 relative">
-                            <label for="s1-veiculo" class="text-sm font-medium text-gray-700">Veículo</label>
-                            <input type="text" id="s1-veiculo" placeholder="Digite para buscar..." required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" autocomplete="off">
-                            <div id="s1-veiculo-suggestions" class="autocomplete-suggestions hidden rounded-b-md shadow-lg"></div>
+function iniciarNovoChecklist() {
+    currentEditingId = null;
+    const formContainer = document.getElementById('form-container');
+    
+    // Lista de todos os campos que usarão a lógica Sim/Não
+    const camposNaoConforme = [
+        { id: 'falta_nf', label: 'Falta de N.F?' },
+        { id: 'falta_assinatura', label: 'Falta de Assinatura N.F?' },
+        { id: 'foto_canhoto', label: 'Foto Canhoto N.F?' },
+        { id: 'dev_falta_nf', label: 'Dev. Falta N.F?' },
+        { id: 'dev_total', label: 'Dev. Total N.F?' },
+        { id: 'dev_parcial', label: 'Dev. Parcial N.F?' },
+        { id: 'retira_oc', label: 'Retira O.C?' }
+    ];
+
+    let naoConformeHTML = '';
+    camposNaoConforme.forEach(campo => {
+        naoConformeHTML += `
+            <div class="border-t pt-3">
+                <label class="text-sm font-medium text-gray-700">${campo.label}</label>
+                <div class="flex space-x-6 mt-2">
+                    <label class="flex items-center"><input type="radio" name="s1-tem_${campo.id}" value="Sim" onchange="toggleInputSection(this, 's1-${campo.id}-wrapper')" class="mr-2 h-4 w-4"> Sim</label>
+                    <label class="flex items-center"><input type="radio" name="s1-tem_${campo.id}" value="Não" onchange="toggleInputSection(this, 's1-${campo.id}-wrapper')" class="mr-2 h-4 w-4" checked> Não</label>
+                </div>
+                <div id="s1-${campo.id}-wrapper" class="hidden mt-2">
+                    <div id="s1-${campo.id}-container" class="space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <button type="button" onclick="addDynamicInput('s1-${campo.id}-container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
                         </div>
                     </div>
-                    <fieldset class="border-t pt-4"><legend class="text-sm font-medium text-gray-700 mb-2">Retorno de notas não conforme</legend>
-                        <div class="space-y-3">
-                            <div><label class="text-sm text-gray-600">Falta de N.F N°</label><div id="s1-falta_nf_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-falta_nf_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                            <div><label class="text-sm text-gray-600">Falta de Assinatura N.F N°</label><div id="s1-falta_assinatura_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-falta_assinatura_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                            <div><label class="text-sm text-gray-600">Foto Canhoto N.F N°</label><div id="s1-foto_canhoto_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-foto_canhoto_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                            <div><label class="text-sm text-gray-600">Dev. Falta N.F N°</label><div id="s1-dev_falta_nf_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-dev_falta_nf_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                            <div><label class="text-sm text-gray-600">Dev. Total N.F N°</label><div id="s1-dev_total_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-dev_total_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                            <div><label class="text-sm text-gray-600">Dev. Parcial N.F N°</label><div id="s1-dev_parcial_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-dev_parcial_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                            <div><label class="text-sm text-gray-600">Retira O.C N°</label><div id="s1-retira_oc_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-retira_oc_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                        </div>
-                    </fieldset>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4"><div><label class="text-sm font-medium text-gray-700">Cartão de Combustível</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Não" class="mr-2 h-4 w-4"> Não</label><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Agregado" class="mr-2 h-4 w-4"> Agregado</label></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-sm font-medium text-gray-700">Celular</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-celular" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-celular" value="Não" class="mr-2 h-4 w-4"> Não</label><label class="flex items-center"><input type="radio" name="s1-celular" value="Agregado" class="mr-2 h-4 w-4"> Agregado</label></div></div><div><label class="text-sm font-medium text-gray-700">Carregador</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-carregador" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-carregador" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div></div></div>
-                    <button type="button" onclick="salvarEtapa1()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Conferência</button>
-                </fieldset>
-            </form>
+                </div>
+            </div>
         `;
-        navigateTo('view-form', 'retorno');
-        setupAutocomplete();
-    }
+    });
+
+    formContainer.innerHTML = `
+        <div class="flex justify-between items-start">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Novo Checklist de Retorno</h2>
+            <button onclick="navigateTo('view-dashboard', 'retorno')" class="text-sm text-gray-600 hover:text-gray-900">&larr; Voltar ao Painel</button>
+        </div>
+        <form id="checklist-form">
+            <fieldset class="space-y-4">
+                <h3 class="font-semibold text-gray-700 border-b pb-2">1 - Documentos</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label for="s1-data" class="text-sm font-medium text-gray-700">Data</label><input type="date" id="s1-data" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div><label for="s1-numero_carga" class="text-sm font-medium text-gray-700">Número da Carga</label><input type="text" id="s1-numero_carga" placeholder="Insira o número" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div class="sm:col-span-2 relative">
+                        <label for="s1-veiculo" class="text-sm font-medium text-gray-700">Veículo</label>
+                        <input type="text" id="s1-veiculo" placeholder="Digite para buscar..." required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" autocomplete="off">
+                        <div id="s1-veiculo-suggestions" class="autocomplete-suggestions hidden rounded-b-md shadow-lg"></div>
+                    </div>
+                </div>
+                <fieldset class="space-y-3">
+                    <legend class="text-base font-medium text-gray-900 pt-4">Retorno de notas não conforme</legend>
+                    ${naoConformeHTML}
+                </fieldset>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4"><div><label class="text-sm font-medium text-gray-700">Cartão de Combustível</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Não" class="mr-2 h-4 w-4"> Não</label><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Agregado" class="mr-2 h-4 w-4"> Agregado</label></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-sm font-medium text-gray-700">Celular</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-celular" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-celular" value="Não" class="mr-2 h-4 w-4"> Não</label><label class="flex items-center"><input type="radio" name="s1-celular" value="Agregado" class="mr-2 h-4 w-4"> Agregado</label></div></div><div><label class="text-sm font-medium text-gray-700">Carregador</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-carregador" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-carregador" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div></div></div>
+                <button type="button" onclick="salvarEtapa1()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Conferência</button>
+            </fieldset>
+        </form>
+    `;
+    navigateTo('view-form', 'retorno');
+    setupAutocomplete();
+}
     
 function iniciarEtapa(etapa, id) {
     currentEditingId = id;
@@ -1082,55 +1100,60 @@ function getSobraInputValues(containerId) {
 }
 
 
-    function salvarEtapa1() {
-        const cargaInput = document.getElementById('s1-numero_carga');
-        if(!cargaInput || !cargaInput.value) { showToast('Número da carga é obrigatório.', 'error'); return; }
+function salvarEtapa1() {
+    const cargaInput = document.getElementById('s1-numero_carga');
+    if(!cargaInput || !cargaInput.value) { showToast('Número da carga é obrigatório.', 'error'); return; }
 
-        const cartaoCombustivel = document.querySelector('input[name="s1-cartao_combustivel"]:checked');
-        const celular = document.querySelector('input[name="s1-celular"]:checked');
-        const carregador = document.querySelector('input[name="s1-carregador"]:checked');
+    const cartaoCombustivel = document.querySelector('input[name="s1-cartao_combustivel"]:checked');
+    const celular = document.querySelector('input[name="s1-celular"]:checked');
+    const carregador = document.querySelector('input[name="s1-carregador"]:checked');
 
-        if (!cartaoCombustivel || !celular || !carregador) {
-            showToast('Por favor, marque todas as opções (Cartão, Celular, Carregador).', 'error');
-            return;
-        }
-
-        const novoChecklist = {
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            status: 'Aguardando Conferência',
-            criadoPor: currentUser.name,
-            conferidoPor: null,
-            finalizadoPor: null,
-            secao1: {
-                carga: document.getElementById('s1-numero_carga').value,
-                veiculo: document.getElementById('s1-veiculo').value,
-                data: document.getElementById('s1-data').value,
-                falta_nf: getDynamicInputValues('s1-falta_nf_container'),
-                falta_assinatura: getDynamicInputValues('s1-falta_assinatura_container'),
-                foto_canhoto: getDynamicInputValues('s1-foto_canhoto_container'),
-                dev_falta_nf: getDynamicInputValues('s1-dev_falta_nf_container'),
-                dev_total: getDynamicInputValues('s1-dev_total_container'),
-                dev_parcial: getDynamicInputValues('s1-dev_parcial_container'),
-                retira_oc: getDynamicInputValues('s1-retira_oc_container'),
-                cartao_combustivel: cartaoCombustivel.value,
-                celular: celular.value,
-                carregador: carregador.value,
-            },
-            secao2: {},
-            secao3: {}
-        };
-
-        checklistsCollection.add(novoChecklist)
-            .then(() => {
-                showToast('Checklist criado com sucesso!');
-                navigateTo('view-dashboard', 'retorno');
-                fetchChecklistsPage(1, true); 
-            })
-            .catch(error => {
-                console.error("Erro ao adicionar: ", error);
-                showToast('Erro ao criar checklist.', 'error');
-            });
+    if (!cartaoCombustivel || !celular || !carregador) {
+        showToast('Por favor, marque todas as opções (Cartão, Celular, Carregador).', 'error');
+        return;
     }
+
+    const getDataIfSim = (id) => {
+        const radioSim = document.querySelector(`input[name="s1-tem_${id}"]:checked`);
+        return (radioSim && radioSim.value === 'Sim') ? getDynamicInputValues(`s1-${id}-container`) : [];
+    };
+
+    const novoChecklist = {
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        status: 'Aguardando Conferência',
+        criadoPor: currentUser.name,
+        conferidoPor: null,
+        finalizadoPor: null,
+        secao1: {
+            carga: document.getElementById('s1-numero_carga').value,
+            veiculo: document.getElementById('s1-veiculo').value,
+            data: document.getElementById('s1-data').value,
+            falta_nf: getDataIfSim('falta_nf'),
+            falta_assinatura: getDataIfSim('falta_assinatura'),
+            foto_canhoto: getDataIfSim('foto_canhoto'),
+            dev_falta_nf: getDataIfSim('dev_falta_nf'),
+            dev_total: getDataIfSim('dev_total'),
+            dev_parcial: getDataIfSim('dev_parcial'),
+            retira_oc: getDataIfSim('retira_oc'),
+            cartao_combustivel: cartaoCombustivel.value,
+            celular: celular.value,
+            carregador: carregador.value,
+        },
+        secao2: {},
+        secao3: {}
+    };
+
+    checklistsCollection.add(novoChecklist)
+        .then(() => {
+            showToast('Checklist criado com sucesso!');
+            navigateTo('view-dashboard', 'retorno');
+            fetchChecklistsPage(1, true); 
+        })
+        .catch(error => {
+            console.error("Erro ao adicionar: ", error);
+            showToast('Erro ao criar checklist.', 'error');
+        });
+}
 
     function salvarEtapa2() {
         if (!currentEditingId) return;
@@ -1324,7 +1347,7 @@ function abrirModal(id) {
             <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col modal-content">
                 <div class="p-4 border-b flex justify-between items-center"><h3 class="text-lg font-bold text-gray-800">Detalhes do Checklist - Carga ${secao1.carga}</h3><button onclick="fecharModal()" class="text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button></div>
                 <div class="p-6 overflow-y-auto space-y-4 text-sm">
-                    <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 1: Documentos</span><span class="font-normal text-xs text-gray-500">Criado por: ${item.criadoPor || 'N/A'}</span></h4><p><strong>Data:</strong> ${dataFormatada}</p><p><strong>Veículo:</strong> ${secao1.veiculo || 'N/A'}</p><div class="mt-2 pt-2 border-t"><h5 class="font-semibold mb-1">Notas não Conforme:</h5><p><strong>Falta N.F:</strong> ${(secao1.falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Falta Assinatura:</strong> ${(secao1.falta_assinatura || []).join(', ') || 'Nenhuma'}</p><p><strong>Foto Canhoto:</strong> ${(secao1.foto_canhoto || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Falta N.F:</strong> ${(secao1.dev_falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Total:</strong> ${(secao1.dev_total || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Parcial:</strong> ${(secao1.dev_parcial || []).join(', ') || 'Nenhuma'}</p><p><strong>Retira O.C:</strong> ${(secao1.retira_oc || []).join(', ') || 'Nenhuma'}</p></div><div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-3 gap-2"><div><strong>Cartão Comb.:</strong> ${secao1.cartao_combustivel || 'N/A'}</div><div><strong>Celular:</strong> ${secao1.celular || 'N/A'}</div><div><strong>Carregador:</strong> ${secao1.carregador || 'N/A'}</div></div></div>
+                    <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 1: Documentos</span><span class="font-normal text-xs text-gray-500">Criado por: ${item.criadoPor || 'N/A'}</span></h4><p><strong>Data:</strong> ${dataFormatada}</p><p><strong>Veículo:</strong> ${secao1.veiculo || 'N/A'}</p><div class="mt-2 pt-2 border-t"><h5 class="font-semibold mb-1">Notas não Conforme:</h5><p><strong>Falta N.F:</strong> ${(secao1.falta_nf || []).join(', ') || 'Não'}</p><p><strong>Falta Assinatura:</strong> ${(secao1.falta_assinatura || []).join(', ') || 'Não'}</p><p><strong>Foto Canhoto:</strong> ${(secao1.foto_canhoto || []).join(', ') || 'Não'}</p><p><strong>Dev. Falta N.F:</strong> ${(secao1.dev_falta_nf || []).join(', ') || 'Não'}</p><p><strong>Dev. Total:</strong> ${(secao1.dev_total || []).join(', ') || 'Não'}</p><p><strong>Dev. Parcial:</strong> ${(secao1.dev_parcial || []).join(', ') || 'Não'}</p><p><strong>Retira O.C:</strong> ${(secao1.retira_oc || []).join(', ') || 'Não'}</p></div><div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-3 gap-2"><div><strong>Cartão Comb.:</strong> ${secao1.cartao_combustivel || 'N/A'}</div><div><strong>Celular:</strong> ${secao1.celular || 'N/A'}</div><div><strong>Carregador:</strong> ${secao1.carregador || 'N/A'}</div></div></div>
                     <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 2: Ativos / Produtos</span><span class="font-normal text-xs text-gray-500">Conferido por: ${item.conferidoPor || 'Pendente'}</span></h4><div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><div><strong>Caçamba:</strong> ${secao2.cacamba !== undefined ? secao2.cacamba : 'Pendente'}</div><div><strong>Gaiola:</strong> ${secao2.gaiola !== undefined ? secao2.gaiola : 'Pendente'}</div><div><strong>Palete:</strong> ${secao2.palete !== undefined ? secao2.palete : 'Pendente'}</div><div><strong>Chapatex:</strong> ${secao2.chapatex !== undefined ? secao2.chapatex : 'Pendente'}</div></div><div class="mt-2 pt-2 border-t"><p><strong>Produtos Conferidos:</strong> ${secao2.produtos_conferidos || 'Pendente'}</p><p><strong>Carga Divergente:</strong> ${secao2.carga_divergente || 'Pendente'}</p><div class="mt-1 pl-4">${divergenciasHTML}</div><p class="mt-2"><strong>Tem Sobra:</strong> ${secao2.tem_sobra || 'Pendente'}</p><div class="mt-1 pl-4">${sobrasHTML}</div></div>
                     ${frotaSummaryHTML} ${secao3HTML}
                 </div>
