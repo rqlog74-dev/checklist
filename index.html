@@ -308,7 +308,9 @@
         </div>
     </div>
 
+
     <script>
+        
     // ===============================================================
     //                  INICIALIZAÇÃO E CONFIGURAÇÃO DO FIREBASE
     // ===============================================================
@@ -334,8 +336,8 @@
     // ===============================================================
     let currentUser = null; 
     let veiculosList = [];
-    let currentEditingId = null;
     var tiposEmbalagemList = []; 
+    let currentEditingId = null;
     let metaDiariaRetorno = 0;  
 
     // Estado Checklist Retorno
@@ -405,41 +407,51 @@
     auth.onAuthStateChanged(user => {
         if (user) {
             Promise.all([
-                usersCollection.doc(user.uid).get(),
-                veiculosCollection.get()
-            ]).then(([userDoc, veiculosSnapshot]) => {
-                if (userDoc.exists) {
-                    currentUser = { uid: user.uid, email: user.email, role: userDoc.data().role, name: userDoc.data().name };
-                    veiculosList = veiculosSnapshot.docs.map(doc => doc.data().nome);
+    usersCollection.doc(user.uid).get(),
+    veiculosCollection.get(),
+    db.collection('configuracoes').doc('metas').get(),
+    db.collection('tiposEmbalagem').orderBy('nome').get() // <-- Busca as embalagens
+]).then(([userDoc, veiculosSnapshot, metasDoc, embalagensSnapshot]) => {
+    if (userDoc.exists) {
+        currentUser = { uid: user.uid, email: user.email, role: userDoc.data().role, name: userDoc.data().name };
+        veiculosList = veiculosSnapshot.docs.map(doc => doc.data().nome);
 
-                    document.getElementById('login-view').style.display = 'none';
-                    document.getElementById('app-container').classList.remove('hidden');
-                    document.getElementById('current-user-name').textContent = currentUser.name;
-                    document.getElementById('current-user-role').textContent = currentUser.role;
-                    
-                    updatePermissions();
+        // Preenche a 'gaveta' com os dados corretos
+        tiposEmbalagemList = embalagensSnapshot.docs.map(doc => doc.data().nome);
+        
+        if (metasDoc.exists) {
+            const hojeString = new Date().toISOString().split('T')[0];
+            const dataMetaSalva = metasDoc.data().dataMeta;
+            if (dataMetaSalva === hojeString) {
+                metaDiariaRetorno = metasDoc.data().metaDiariaRetorno || 0;
+            }
+        }
 
-                    // Listeners e fetches iniciais
-                    listenForStats(); 
-                    fetchChecklistsPage(1, true); 
-                    listenForStatsFrota();
-                    fetchChecklistsPageFrota(1, true);
+        document.getElementById('login-view').style.display = 'none';
+        document.getElementById('app-container').classList.remove('hidden');
+        document.getElementById('current-user-name').textContent = currentUser.name;
+        document.getElementById('current-user-role').textContent = currentUser.role;
+        
+        updatePermissions();
+        listenForStats(); 
+        fetchChecklistsPage(1, true); 
+        listenForStatsFrota();
+        fetchChecklistsPageFrota(1, true);
 
-                    // Mostra a seção correta baseada no perfil
-                    if (currentUser.role === 'Frota') {
-                        showAppSection('frota');
-                    } else {
-                        showAppSection('retorno');
-                    }
-                } else {
-                    showToast('Perfil de usuário não configurado.', 'error');
-                    logout();
-                }
-            }).catch(error => {
-                console.error("Erro no Promise.all:", error);
-                showToast('Erro ao carregar dados iniciais.', 'error');
-                logout();
-            });
+        if (currentUser.role === 'Frota') {
+            showAppSection('frota');
+        } else {
+            showAppSection('retorno');
+        }
+    } else {
+        showToast('Perfil de usuário não configurado.', 'error');
+        logout();
+    }
+}).catch(error => {
+    console.error("Erro no Promise.all:", error);
+    showToast('Erro ao carregar dados iniciais.', 'error');
+    logout();
+});
         } else {
             currentUser = null;
             document.getElementById('login-view').style.display = 'flex';
@@ -902,116 +914,117 @@ function iniciarEtapa(etapa, id) {
         summaryHTML += frotaSummaryHTML;
     }
 
-    if (etapa === 2) {
-        formHTML = `
-            <fieldset class="space-y-4">
-                <h3 class="font-semibold text-gray-700 border-b pb-2">2° ATIVOS / PRODUTOS DIVERGENTE</h3>
-                <div class="pt-2">
-                    <label class="text-sm font-medium text-gray-700">Ativos retornados (quantidade):</label>
-                    <div class="grid grid-cols-2 gap-x-4 gap-y-3 mt-2">
-                        <div><label for="s2-qtd_cacamba" class="text-xs text-gray-600">Caçamba</label><input type="number" id="s2-qtd_cacamba" value="${secao2.cacamba || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                        <div><label for="s2-qtd_gaiola" class="text-xs text-gray-600">Gaiola</label><input type="number" id="s2-qtd_gaiola" value="${secao2.gaiola || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                        <div><label for="s2-qtd_palete" class="text-xs text-gray-600">Palete</label><input type="number" id="s2-qtd_palete" value="${secao2.palete || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                        <div><label for="s2-qtd_chapatex" class="text-xs text-gray-600">Chapatex</label><input type="number" id="s2-qtd_chapatex" value="${secao2.chapatex || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                    </div>
+if (etapa === 2) {
+    formHTML = `
+        <fieldset class="space-y-4">
+            <h3 class="font-semibold text-gray-700 border-b pb-2">2° ATIVOS / PRODUTOS DIVERGENTE</h3>
+            <div class="pt-2">
+                <label class="text-sm font-medium text-gray-700">Ativos retornados (quantidade):</label>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-3 mt-2">
+                    <div><label for="s2-qtd_cacamba" class="text-xs text-gray-600">Caçamba</label><input type="number" id="s2-qtd_cacamba" value="${secao2.cacamba || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                    <div><label for="s2-qtd_gaiola" class="text-xs text-gray-600">Gaiola</label><input type="number" id="s2-qtd_gaiola" value="${secao2.gaiola || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                    <div><label for="s2-qtd_palete" class="text-xs text-gray-600">Palete</label><input type="number" id="s2-qtd_palete" value="${secao2.palete || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                    <div><label for="s2-qtd_chapatex" class="text-xs text-gray-600">Chapatex</label><input type="number" id="s2-qtd_chapatex" value="${secao2.chapatex || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
-                    <div><label class="text-sm font-medium text-gray-700">Produtos conferidos?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div>
-                    <div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" class="mr-2 h-4 w-4" onchange="toggleDivergencia(true)"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" class="mr-2 h-4 w-4" onchange="toggleDivergencia(false)" checked> Não</label></div></div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
+                <div><label class="text-sm font-medium text-gray-700">Produtos conferidos?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div>
+                <div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" class="mr-2 h-4 w-4" onchange="toggleDivergencia(true)"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" class="mr-2 h-4 w-4" onchange="toggleDivergencia(false)" checked> Não</label></div></div>
+            </div>
+            <div class="border-t pt-4">
+                <label class="text-sm font-medium text-gray-700">Tem sobra?</label>
+                <div class="flex space-x-6 mt-2">
+                    <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Sim" class="mr-2 h-4 w-4" onchange="toggleSobra(true)"> Sim</label>
+                    <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Não" class="mr-2 h-4 w-4" onchange="toggleSobra(false)" checked> Não</label>
                 </div>
-                <div class="border-t pt-4">
-                    <label class="text-sm font-medium text-gray-700">Tem sobra?</label>
-                    <div class="flex space-x-6 mt-2">
-                        <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Sim" class="mr-2 h-4 w-4" onchange="toggleSobra(true)"> Sim</label>
-                        <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Não" class="mr-2 h-4 w-4" onchange="toggleSobra(false)" checked> Não</label>
-                    </div>
-                </div>
-                <div id="sobra-details" class="hidden space-y-4 border-t pt-4">
-                    <div id="sobra-container">
-                        <h4 class="text-sm font-semibold text-gray-600">Detalhes da Sobra</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-start mt-2">
-                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
-                            <div class="relative">
-                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
-                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                                <button type="button" onclick="addSobraInput('sobra-container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
-                            </div>
+            </div>
+            <div id="sobra-details" class="hidden space-y-4 border-t pt-4">
+                <div id="sobra-container">
+                    <h4 class="text-sm font-semibold text-gray-600">Detalhes da Sobra</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-start mt-2">
+                        <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                        <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                        <div class="relative">
+                            <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                            <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <button type="button" onclick="addSobraInput('sobra-container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
                         </div>
                     </div>
                 </div>
-                <div id="divergencia-details" class="hidden space-y-4 border-t pt-4">
-                    <div id="divergencia-tipo-dev_total">
-                        <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Total)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
-                            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
-                            <div class="relative">
-                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
-                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                                <button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_total')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
-                            </div>
+            </div>
+            <div id="divergencia-details" class="hidden space-y-4 border-t pt-4">
+                <div id="divergencia-tipo-dev_total">
+                    <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Total)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
+                        <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                        <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                        <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                        <div class="relative">
+                            <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                            <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
                         </div>
-                    </div>
-                    <div id="divergencia-tipo-dev_parcial">
-                        <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Parcial)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
-                            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
-                            <div class="relative">
-                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
-                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                                <button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_parcial')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="divergencia-tipo-falta">
-                        <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Falta)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
-                            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
-                            <div class="relative">
-                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
-                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                                <button type="button" onclick="addDivergenciaInput('divergencia-tipo-falta')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="divergencia-tipo-retira_oc">
-                        <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Retira O.C)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
-                            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
-                            <div class="relative">
-                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
-                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                                <button type="button" onclick="addDivergenciaInput('divergencia-tipo-retira_oc')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
-                            </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_total')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
                         </div>
                     </div>
                 </div>
-                <button type="button" onclick="salvarEtapa2()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Admin</button>
-            </fieldset>`;
-    } else if (etapa === 3) {
+                <div id="divergencia-tipo-dev_parcial">
+                    <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Parcial)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
+                        <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                        <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                        <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                        <div class="relative">
+                            <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                            <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_parcial')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="divergencia-tipo-falta">
+                    <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Falta)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
+                        <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                        <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                        <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                        <div class="relative">
+                            <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                            <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <button type="button" onclick="addDivergenciaInput('divergencia-tipo-falta')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="divergencia-tipo-retira_oc">
+                    <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Retira O.C)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
+                        <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                        <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                        <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                        <div class="relative">
+                            <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                            <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <button type="button" onclick="addDivergenciaInput('divergencia-tipo-retira_oc')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button type="button" onclick="salvarEtapa2()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Admin</button>
+        </fieldset>`;
+}
+ else if (etapa === 3) {
         formHTML = `
             <fieldset class="space-y-4">
                 <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
@@ -1032,13 +1045,49 @@ function iniciarEtapa(etapa, id) {
                     <div class="sm:col-span-2"><label for="s3-ajudante2" class="text-sm font-medium text-gray-700">Ajudante 2 (Opcional)</label><input type="text" id="s3-ajudante2" value="${secao3.ajudante2 || ''}" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
                 </div>
                 <div class="border-t pt-4 space-y-3">
-                    <div><label for="s3-obs_arrumacao" class="text-sm font-medium text-gray-700">Orientação quanto à arrumação do baú</label><input type="text" id="s3-obs_arrumacao" value="${secao3.obs_arrumacao || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div><label for="s3-obs_fusion" class="text-sm font-medium text-gray-700">Validação da marcação no Fusion</label><input type="text" id="s3-obs_fusion" value="${secao3.obs_fusion || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div><label for="s3-obs_ocorrencias" class="text-sm font-medium text-gray-700">Lançamento das ocorrências</label><input type="text" id="s3-obs_ocorrencias" value="${secao3.obs_ocorrencias || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div><label for="s3-obs_devolucao" class="text-sm font-medium text-gray-700">Geração das cargas de devolução</label><input type="text" id="s3-obs_devolucao" value="${secao3.obs_devolucao || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div><label for="s3-obs_feedback" class="text-sm font-medium text-gray-700">Feedback da rota</label><input type="text" id="s3-obs_feedback" value="${secao3.obs_feedback || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                <div>
+    <label class="text-sm font-medium text-gray-700">Como você avalia a arrumação do baú?</label>
+    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+        <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Padrão" class="mr-2 h-4 w-4"> Padrão</label>
+        <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Bom" class="mr-2 h-4 w-4"> Bom</label>
+        <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Regular" class="mr-2 h-4 w-4"> Regular</label>
+        <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Ruim" class="mr-2 h-4 w-4"> Ruim</label>
+    </div>
+</div>
+<div>
+    <label class="text-sm font-medium text-gray-700">A validação da marcação no Fusion foi realizada conforme o procedimento?</label>
+    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+        <label class="flex items-center"><input type="radio" name="s3-obs_fusion" value="Conforme" class="mr-2 h-4 w-4"> Conforme</label>
+        <label class="flex items-center"><input type="radio" name="s3-obs_fusion" value="Não Conforme" class="mr-2 h-4 w-4"> Não Conforme</label>
+    </div>
+</div>
+   <div>
+    <label class="text-sm font-medium text-gray-700">Como você avalia o processo de lançamento de ocorrências?</label>
+    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Excelente" class="mr-2 h-4 w-4"> Excelente</label>
+        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Bom" class="mr-2 h-4 w-4"> Bom</label>
+        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Regular" class="mr-2 h-4 w-4"> Regular</label>
+        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Ruim" class="mr-2 h-4 w-4"> Ruim</label>
+    </div>
+</div>
+    <div>
+    <label class="text-sm font-medium text-gray-700">A geração das cargas de devolução seguiu o padrão?</label>
+    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+        <label class="flex items-center"><input type="radio" name="s3-obs_devolucao" value="Sim" class="mr-2 h-4 w-4"> Sim</label>
+        <label class="flex items-center"><input type="radio" name="s3-obs_devolucao" value="Não" class="mr-2 h-4 w-4"> Não</label>
+    </div>
+</div>
+  <div>
+    <label class="text-sm font-medium text-gray-700">Feedback da rota</label>
+    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Excelente" class="mr-2 h-4 w-4"> Excelente</label>
+        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Bom" class="mr-2 h-4 w-4"> Bom</label>
+        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Regular" class="mr-2 h-4 w-4"> Regular</label>
+        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Ruim" class="mr-2 h-4 w-4"> Ruim</label>
+    </div>
+</div>
                     <div><label for="s3-obs_gerais" class="text-sm font-medium text-gray-700">Observações Gerais</label><textarea id="s3-obs_gerais" placeholder="Adicione aqui quaisquer observações gerais..." rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">${secao3.obs_gerais || ''}</textarea></div>
-                    <div><label for="s3-responsavel" class="text-sm font-medium text-gray-700">Responsável Conferência</label><input type="text" id="s3-responsavel" value="${secao3.responsavel || ''}" required placeholder="Nome completo do responsável" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div><label for="s3-responsavel" class="text-sm font-medium text-gray-700">Responsável</label><input type="text" id="s3-responsavel" value="${secao3.responsavel || ''}" required placeholder="Nome completo do responsável" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
                 </div>
                 <button type="button" onclick="salvarEtapa3()" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors shadow">Concluir Checklist</button>
             </fieldset>`;
@@ -1188,54 +1237,54 @@ function salvarEtapa1() {
             });
     }
 
-    function salvarEtapa3() {
-        if (!currentEditingId) return;
-        if(!document.getElementById('s3-responsavel').value) { showToast('Responsável é obrigatório.', 'error'); return; }
-        
-        const tratativa1_status = document.querySelector('input[name="tratativa1_status"]:checked')?.value;
-        const tratativa2_status = document.querySelector('input[name="tratativa2_status"]:checked')?.value;
+function salvarEtapa3() {
+    if (!currentEditingId) return;
+    if(!document.getElementById('s3-responsavel').value) { showToast('Responsável é obrigatório.', 'error'); return; }
+    
+    const tratativa1_status = document.querySelector('input[name="tratativa1_status"]:checked')?.value;
+    const tratativa2_status = document.querySelector('input[name="tratativa2_status"]:checked')?.value;
 
-        if (!tratativa1_status || !tratativa2_status) {
-            showToast('Por favor, marque o status para todas as tratativas.', 'error');
-            return;
-        }
-
-        let finalStatus = 'Concluído';
-        if (tratativa1_status === 'Em tratamento' || tratativa2_status === 'Em tratamento') {
-            finalStatus = 'Em Tratamento';
-        }
-
-        const dataToUpdate = {
-            status: finalStatus,
-            finalizadoPor: currentUser.name,
-            secao3: {
-                motorista: document.getElementById('s3-motorista').value,
-                ajudante1: document.getElementById('s3-ajudante1').value,
-                ajudante2: document.getElementById('s3-ajudante2').value,
-                tratativa1_status: tratativa1_status,
-                tratativa1_obs: document.getElementById('tratativa1_obs').value,
-                tratativa2_status: tratativa2_status,
-                tratativa2_obs: document.getElementById('tratativa2_obs').value,
-                obs_arrumacao: document.getElementById('s3-obs_arrumacao').value,
-                obs_fusion: document.getElementById('s3-obs_fusion').value,
-                obs_ocorrencias: document.getElementById('s3-obs_ocorrencias').value,
-                obs_devolucao: document.getElementById('s3-obs_devolucao').value,
-                obs_feedback: document.getElementById('s3-obs_feedback').value,
-                obs_gerais: document.getElementById('s3-obs_gerais').value,
-                responsavel: document.getElementById('s3-responsavel').value
-            }
-        };
-        checklistsCollection.doc(currentEditingId).set(dataToUpdate, { merge: true })
-            .then(() => {
-                showToast('Checklist finalizado com sucesso!');
-                navigateTo('view-dashboard', 'retorno');
-                fetchChecklistsPage(currentPage); 
-            })
-            .catch(error => {
-                console.error("Erro ao finalizar: ", error);
-                showToast('Erro ao concluir checklist.', 'error');
-            });
+    if (!tratativa1_status || !tratativa2_status) {
+        showToast('Por favor, marque o status para todas as tratativas.', 'error');
+        return;
     }
+
+    let finalStatus = 'Concluído';
+    if (tratativa1_status === 'Em tratamento' || tratativa2_status === 'Em tratamento') {
+        finalStatus = 'Em Tratamento';
+    }
+
+    const dataToUpdate = {
+        status: finalStatus,
+        finalizadoPor: currentUser.name,
+        secao3: {
+            motorista: document.getElementById('s3-motorista').value,
+            ajudante1: document.getElementById('s3-ajudante1').value,
+            ajudante2: document.getElementById('s3-ajudante2').value,
+            tratativa1_status: tratativa1_status,
+            tratativa1_obs: document.getElementById('tratativa1_obs').value,
+            tratativa2_status: tratativa2_status,
+            tratativa2_obs: document.getElementById('tratativa2_obs').value,
+            obs_arrumacao: document.querySelector('input[name="s3-obs_arrumacao"]:checked')?.value || '',
+            obs_fusion: document.querySelector('input[name="s3-obs_fusion"]:checked')?.value || '',
+            obs_ocorrencias: document.querySelector('input[name="s3-obs_ocorrencias"]:checked')?.value || '',
+            obs_devolucao: document.querySelector('input[name="s3-obs_devolucao"]:checked')?.value || '',
+            obs_feedback: document.querySelector('input[name="s3-obs_feedback"]:checked')?.value || '',
+            obs_gerais: document.getElementById('s3-obs_gerais').value,
+            responsavel: document.getElementById('s3-responsavel').value
+        }
+    };
+    checklistsCollection.doc(currentEditingId).set(dataToUpdate, { merge: true })
+        .then(() => {
+            showToast('Checklist finalizado com sucesso!');
+            navigateTo('view-dashboard', 'retorno');
+            fetchChecklistsPage(currentPage); 
+        })
+        .catch(error => {
+            console.error("Erro ao finalizar: ", error);
+            showToast('Erro ao concluir checklist.', 'error');
+        });
+}
     
     // --- LÓGICA DE EXIBIÇÃO E EXCLUSÃO (MASTER) ---
 function abrirModal(id) {
