@@ -341,6 +341,7 @@
     let metaDiariaRetorno = 0;  
 
     // Estado Checklist Retorno
+    let allChecklists = [];
     let statsUnsubscribe = null; 
     let currentPage = 1;
     const ITEMS_PER_PAGE = 10;
@@ -348,6 +349,7 @@
     let lastFetchedPageSize = 0;
 
      // Estado Checklist Frota
+    let allChecklistsFrota = [];
     let statsUnsubscribeFrota = null;
     let currentPageFrota = 1;
     let pageStartCursorsFrota = [null];
@@ -430,14 +432,10 @@
         document.getElementById('current-user-name').textContent = currentUser.name;
         document.getElementById('current-user-role').textContent = currentUser.role;
         
-updatePermissions();
-        
-        // **** ADICIONE ESTAS DUAS LINHAS AQUI ****
-        updateStats();       // Calcula e exibe stats iniciais Retorno
-        updateStatsFrota();  // Calcula e exibe stats iniciais Frota
-        // **** FIM DAS LINHAS ADICIONADAS ****
-
+        updatePermissions();
+        listenForStats(); 
         fetchChecklistsPage(1, true); 
+        listenForStatsFrota();
         fetchChecklistsPageFrota(1, true);
 
         if (currentUser.role === 'Frota') {
@@ -467,6 +465,21 @@ updatePermissions();
 
     function logout() { auth.signOut(); }
 
+    function listenForStats() {
+        if (statsUnsubscribe) statsUnsubscribe();
+        statsUnsubscribe = checklistsCollection.onSnapshot(snapshot => {
+            allChecklists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            updateStats(allChecklists);
+        }, error => console.error("Erro ao buscar checklists para estatísticas: ", error));
+    }
+
+    function listenForStatsFrota() {
+        if (statsUnsubscribeFrota) statsUnsubscribeFrota();
+        statsUnsubscribeFrota = checklistsFrotaCollection.onSnapshot(snapshot => {
+            allChecklistsFrota = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            updateStatsFrota(allChecklistsFrota);
+        }, error => console.error("Erro ao buscar checklists de frota para estatísticas: ", error));
+    }
     </script>
 
     <script>
@@ -1008,77 +1021,84 @@ if (etapa === 2) {
                     </div>
                 </div>
             </div>
+
+            <div class="border-t pt-4">
+                <label class="text-sm font-medium text-gray-700">Como você avalia a arrumação do baú?</label>
+                <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                    <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Padrão" ${radioChecked(secao3.obs_arrumacao, 'Padrão')} class="mr-2 h-4 w-4"> Padrão</label>
+                    <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Bom" ${radioChecked(secao3.obs_arrumacao, 'Bom')} class="mr-2 h-4 w-4"> Bom</label>
+                    <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Regular" ${radioChecked(secao3.obs_arrumacao, 'Regular')} class="mr-2 h-4 w-4"> Regular</label>
+                    <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Ruim" ${radioChecked(secao3.obs_arrumacao, 'Ruim')} class="mr-2 h-4 w-4"> Ruim</label>
+                </div>
+            </div>
+
             <button type="button" onclick="salvarEtapa2()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Admin</button>
         </fieldset>`;
 }
- else if (etapa === 3) {
-        formHTML = `
-            <fieldset class="space-y-4">
-                <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-                    <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 1 - Documentos)</h4>
-                    <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Tratado" ${radioChecked(secao3.tratativa1_status, 'Tratado')} class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Em tratamento" ${radioChecked(secao3.tratativa1_status, 'Em tratamento')} class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
-                    <div class="mt-2"><label for="tratativa1_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa1_obs" placeholder="Descreva a resolução para os documentos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">${secao3.tratativa1_obs || ''}</textarea></div>
-                </div>
-                <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-                    <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 2 - Produtos)</h4>
-                    <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Tratado" ${radioChecked(secao3.tratativa2_status, 'Tratado')} class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Em tratamento" ${radioChecked(secao3.tratativa2_status, 'Em tratamento')} class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
-                    <div class="mt-2"><label for="tratativa2_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa2_obs" placeholder="Descreva a resolução para os produtos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">${secao3.tratativa2_obs || ''}</textarea></div>
+else if (etapa === 3) {
+    formHTML = `
+        <fieldset class="space-y-4">
+            <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+                <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 1 - Documentos)</h4>
+                <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Tratado" ${radioChecked(secao3.tratativa1_status, 'Tratado')} class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Em tratamento" ${radioChecked(secao3.tratativa1_status, 'Em tratamento')} class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
+                <div class="mt-2"><label for="tratativa1_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa1_obs" placeholder="Descreva a resolução para os documentos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">${secao3.tratativa1_obs || ''}</textarea></div>
+            </div>
+            <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+                <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 2 - Produtos)</h4>
+                <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Tratado" ${radioChecked(secao3.tratativa2_status, 'Tratado')} class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Em tratamento" ${radioChecked(secao3.tratativa2_status, 'Em tratamento')} class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
+                <div class="mt-2"><label for="tratativa2_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa2_obs" placeholder="Descreva a resolução para os produtos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">${secao3.tratativa2_obs || ''}</textarea></div>
+            </div>
+
+            <h3 class="font-semibold text-gray-700 border-b pb-2">3 - Sala (Administrativa)</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div><label for="s3-motorista" class="text-sm font-medium text-gray-700">Motorista</label><input type="text" id="s3-motorista" value="${secao3.motorista || ''}" placeholder="Nome do motorista" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                <div><label for="s3-ajudante1" class="text-sm font-medium text-gray-700">Ajudante 1</label><input type="text" id="s3-ajudante1" value="${secao3.ajudante1 || ''}" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                <div class="sm:col-span-2"><label for="s3-ajudante2" class="text-sm font-medium text-gray-700">Ajudante 2 (Opcional)</label><input type="text" id="s3-ajudante2" value="${secao3.ajudante2 || ''}" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+            </div>
+            <div class="border-t pt-4 space-y-4">
+
+                <div>
+                    <label class="text-sm font-medium text-gray-700">A validação da marcação no Fusion foi realizada conforme o procedimento?</label>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                        <label class="flex items-center"><input type="radio" name="s3-obs_fusion" value="Conforme" ${radioChecked(secao3.obs_fusion, 'Conforme')} class="mr-2 h-4 w-4"> Conforme</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_fusion" value="Não Conforme" ${radioChecked(secao3.obs_fusion, 'Não Conforme')} class="mr-2 h-4 w-4"> Não Conforme</label>
+                    </div>
                 </div>
 
-                <h3 class="font-semibold text-gray-700 border-b pb-2">3 - Sala (Administrativa)</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    <div><label for="s3-motorista" class="text-sm font-medium text-gray-700">Motorista</label><input type="text" id="s3-motorista" value="${secao3.motorista || ''}" placeholder="Nome do motorista" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div><label for="s3-ajudante1" class="text-sm font-medium text-gray-700">Ajudante 1</label><input type="text" id="s3-ajudante1" value="${secao3.ajudante1 || ''}" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div class="sm:col-span-2"><label for="s3-ajudante2" class="text-sm font-medium text-gray-700">Ajudante 2 (Opcional)</label><input type="text" id="s3-ajudante2" value="${secao3.ajudante2 || ''}" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                </div>
-                <div class="border-t pt-4 space-y-3">
                 <div>
-    <label class="text-sm font-medium text-gray-700">Como você avalia a arrumação do baú?</label>
-    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
-        <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Padrão" class="mr-2 h-4 w-4"> Padrão</label>
-        <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Bom" class="mr-2 h-4 w-4"> Bom</label>
-        <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Regular" class="mr-2 h-4 w-4"> Regular</label>
-        <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Ruim" class="mr-2 h-4 w-4"> Ruim</label>
-    </div>
-</div>
-<div>
-    <label class="text-sm font-medium text-gray-700">A validação da marcação no Fusion foi realizada conforme o procedimento?</label>
-    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
-        <label class="flex items-center"><input type="radio" name="s3-obs_fusion" value="Conforme" class="mr-2 h-4 w-4"> Conforme</label>
-        <label class="flex items-center"><input type="radio" name="s3-obs_fusion" value="Não Conforme" class="mr-2 h-4 w-4"> Não Conforme</label>
-    </div>
-</div>
-   <div>
-    <label class="text-sm font-medium text-gray-700">Como você avalia o processo de lançamento de ocorrências?</label>
-    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
-        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Excelente" class="mr-2 h-4 w-4"> Excelente</label>
-        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Bom" class="mr-2 h-4 w-4"> Bom</label>
-        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Regular" class="mr-2 h-4 w-4"> Regular</label>
-        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Ruim" class="mr-2 h-4 w-4"> Ruim</label>
-    </div>
-</div>
-    <div>
-    <label class="text-sm font-medium text-gray-700">A geração das cargas de devolução seguiu o padrão?</label>
-    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
-        <label class="flex items-center"><input type="radio" name="s3-obs_devolucao" value="Sim" class="mr-2 h-4 w-4"> Sim</label>
-        <label class="flex items-center"><input type="radio" name="s3-obs_devolucao" value="Não" class="mr-2 h-4 w-4"> Não</label>
-    </div>
-</div>
-  <div>
-    <label class="text-sm font-medium text-gray-700">Feedback da rota</label>
-    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
-        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Excelente" class="mr-2 h-4 w-4"> Excelente</label>
-        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Bom" class="mr-2 h-4 w-4"> Bom</label>
-        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Regular" class="mr-2 h-4 w-4"> Regular</label>
-        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Ruim" class="mr-2 h-4 w-4"> Ruim</label>
-    </div>
-</div>
-                    <div><label for="s3-obs_gerais" class="text-sm font-medium text-gray-700">Observações Gerais</label><textarea id="s3-obs_gerais" placeholder="Adicione aqui quaisquer observações gerais..." rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">${secao3.obs_gerais || ''}</textarea></div>
-                    <div><label for="s3-responsavel" class="text-sm font-medium text-gray-700">Responsável</label><input type="text" id="s3-responsavel" value="${secao3.responsavel || ''}" required placeholder="Nome completo do responsável" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <label class="text-sm font-medium text-gray-700">Como você avalia o processo de lançamento de ocorrências?</label>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Excelente" ${radioChecked(secao3.obs_ocorrencias, 'Excelente')} class="mr-2 h-4 w-4"> Excelente</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Bom" ${radioChecked(secao3.obs_ocorrencias, 'Bom')} class="mr-2 h-4 w-4"> Bom</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Regular" ${radioChecked(secao3.obs_ocorrencias, 'Regular')} class="mr-2 h-4 w-4"> Regular</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Ruim" ${radioChecked(secao3.obs_ocorrencias, 'Ruim')} class="mr-2 h-4 w-4"> Ruim</label>
+                    </div>
                 </div>
-                <button type="button" onclick="salvarEtapa3()" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors shadow">Concluir Checklist</button>
-            </fieldset>`;
-    }
+
+                <div>
+                    <label class="text-sm font-medium text-gray-700">A geração das cargas de devolução seguiu o padrão?</label>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                        <label class="flex items-center"><input type="radio" name="s3-obs_devolucao" value="Sim" ${radioChecked(secao3.obs_devolucao, 'Sim')} class="mr-2 h-4 w-4"> Sim</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_devolucao" value="Não" ${radioChecked(secao3.obs_devolucao, 'Não')} class="mr-2 h-4 w-4"> Não</label>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="text-sm font-medium text-gray-700">Feedback da rota</label>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Excelente" ${radioChecked(secao3.obs_feedback, 'Excelente')} class="mr-2 h-4 w-4"> Excelente</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Bom" ${radioChecked(secao3.obs_feedback, 'Bom')} class="mr-2 h-4 w-4"> Bom</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Regular" ${radioChecked(secao3.obs_feedback, 'Regular')} class="mr-2 h-4 w-4"> Regular</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Ruim" ${radioChecked(secao3.obs_feedback, 'Ruim')} class="mr-2 h-4 w-4"> Ruim</label>
+                    </div>
+                </div>
+
+                <div><label for="s3-obs_gerais" class="text-sm font-medium text-gray-700">Observações Gerais</label><textarea id="s3-obs_gerais" placeholder="Adicione aqui quaisquer observações gerais..." rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">${secao3.obs_gerais || ''}</textarea></div>
+                <div><label for="s3-responsavel" class="text-sm font-medium text-gray-700">Responsável Conferência</label><input type="text" id="s3-responsavel" value="${secao3.responsavel || ''}" required placeholder="Nome completo do responsável" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+            </div>
+            <button type="button" onclick="salvarEtapa3()" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors shadow">Concluir Checklist</button>
+        </fieldset>`;
+}
 
     formContainer.innerHTML = `
         <div class="flex justify-between items-start">
@@ -1191,43 +1211,50 @@ function salvarEtapa1() {
         });
 }
 
-    function salvarEtapa2() {
-        if (!currentEditingId) return;
-        
-        const dataToUpdate = {
-            status: 'Aguardando Admin',
-            conferidoPor: currentUser.name,
-            secao2: {
-                cacamba: document.getElementById('s2-qtd_cacamba').value,
-                gaiola: document.getElementById('s2-qtd_gaiola').value,
-                palete: document.getElementById('s2-qtd_palete').value,
-                chapatex: document.getElementById('s2-qtd_chapatex').value,
-                produtos_conferidos: document.querySelector('input[name="s2-produtos_conferidos"]:checked')?.value || '',
-                carga_divergente: document.querySelector('input[name="s2-carga_divergente"]:checked')?.value || '',
-                tem_sobra: document.querySelector('input[name="s2-tem_sobra"]:checked')?.value || '',
-                sobras: getSobraInputValues('sobra-container'),
-                divergencia_dev_total: getDivergenciaInputValues('divergencia-tipo-dev_total'),
-                divergencia_dev_parcial: getDivergenciaInputValues('divergencia-tipo-dev_parcial'),
-                divergencia_falta: getDivergenciaInputValues('divergencia-tipo-falta'),
-                divergencia_retira_oc: getDivergenciaInputValues('divergencia-tipo-retira_oc'),
-            }
-        };
-        checklistsCollection.doc(currentEditingId).set(dataToUpdate, { merge: true })
-            .then(() => {
-                showToast('Etapa 2 salva com sucesso!');
-                navigateTo('view-dashboard', 'retorno');
-                fetchChecklistsPage(currentPage); 
-            })
-            .catch(error => {
-                console.error("Erro ao atualizar: ", error)
-                showToast('Erro ao salvar etapa 2.', 'error');
-            });
+function salvarEtapa2() {
+    if (!currentEditingId) return;
+
+    const dataToUpdate = {
+        status: 'Aguardando Admin',
+        conferidoPor: currentUser.name,
+        secao2: {
+            cacamba: document.getElementById('s2-qtd_cacamba').value,
+            gaiola: document.getElementById('s2-qtd_gaiola').value,
+            palete: document.getElementById('s2-qtd_palete').value,
+            chapatex: document.getElementById('s2-qtd_chapatex').value,
+            produtos_conferidos: document.querySelector('input[name="s2-produtos_conferidos"]:checked')?.value || '',
+            carga_divergente: document.querySelector('input[name="s2-carga_divergente"]:checked')?.value || '',
+            tem_sobra: document.querySelector('input[name="s2-tem_sobra"]:checked')?.value || '',
+            sobras: getSobraInputValues('sobra-container'),
+            divergencia_dev_total: getDivergenciaInputValues('divergencia-tipo-dev_total'),
+            divergencia_dev_parcial: getDivergenciaInputValues('divergencia-tipo-dev_parcial'),
+            divergencia_falta: getDivergenciaInputValues('divergencia-tipo-falta'),
+            divergencia_retira_oc: getDivergenciaInputValues('divergencia-tipo-retira_oc'),
+        }
+    };
+
+    // Adiciona a arrumação do baú aos dados que serão salvos
+    const arrumacaoBau = document.querySelector('input[name="s3-obs_arrumacao"]:checked')?.value || '';
+    if (arrumacaoBau) {
+        dataToUpdate['secao3.obs_arrumacao'] = arrumacaoBau;
     }
+
+    checklistsCollection.doc(currentEditingId).set(dataToUpdate, { merge: true })
+        .then(() => {
+            showToast('Etapa 2 salva com sucesso!');
+            navigateTo('view-dashboard', 'retorno');
+            fetchChecklistsPage(currentPage); 
+        })
+        .catch(error => {
+            console.error("Erro ao atualizar: ", error)
+            showToast('Erro ao salvar etapa 2.', 'error');
+        });
+}
 
 function salvarEtapa3() {
     if (!currentEditingId) return;
     if(!document.getElementById('s3-responsavel').value) { showToast('Responsável é obrigatório.', 'error'); return; }
-    
+
     const tratativa1_status = document.querySelector('input[name="tratativa1_status"]:checked')?.value;
     const tratativa2_status = document.querySelector('input[name="tratativa2_status"]:checked')?.value;
 
@@ -1252,7 +1279,7 @@ function salvarEtapa3() {
             tratativa1_obs: document.getElementById('tratativa1_obs').value,
             tratativa2_status: tratativa2_status,
             tratativa2_obs: document.getElementById('tratativa2_obs').value,
-            obs_arrumacao: document.querySelector('input[name="s3-obs_arrumacao"]:checked')?.value || '',
+            // A linha 'obs_arrumacao' foi removida daqui
             obs_fusion: document.querySelector('input[name="s3-obs_fusion"]:checked')?.value || '',
             obs_ocorrencias: document.querySelector('input[name="s3-obs_ocorrencias"]:checked')?.value || '',
             obs_devolucao: document.querySelector('input[name="s3-obs_devolucao"]:checked')?.value || '',
@@ -1673,180 +1700,91 @@ async function excluirChecklist(id, type) {
     }
 
     // --- ESTATÍSTICAS, PAGINAÇÃO E FILTROS - RETORNO ---
-async function updateStats() {
-    console.log("Calculando estatísticas...");
-    // Define quais cards atualizar (para Retorno)
-    const statElements = {
-        'stats-total': checklistsCollection, // Query base para total
-        'stats-aguardando-conferencia': checklistsCollection.where('status', '==', 'Aguardando Conferência'),
-        'stats-aguardando-admin': checklistsCollection.where('status', '==', 'Aguardando Admin'),
-        'stats-em-tratamento': checklistsCollection.where('status', '==', 'Em Tratamento'),
-        'stats-concluido': checklistsCollection.where('status', '==', 'Concluído')
-    };
-    const statsPeriodoElement = document.getElementById('stats-periodo');
+function updateStats(data) {
+    // O card "TOTAL" sempre mostrará o número da coleção inteira.
+    document.getElementById('stats-total').textContent = allChecklists.length;
 
-    // Pega filtros de data (se houver) para o card 'Período'
-    const dataInicioStr = document.getElementById('filtro-data-inicio').value;
-    const dataFimStr = document.getElementById('filtro-data-fim').value;
-    let periodoQuery = checklistsCollection; // Query inicial para período
-
-    try {
-        // Aplica filtro de data se necessário para a contagem do período
-        let periodoPromise = null;
-        if (dataInicioStr || dataFimStr) {
-            if (dataInicioStr) {
-                const inicioTs = firebase.firestore.Timestamp.fromDate(new Date(dataInicioStr + 'T00:00:00Z')); // Use Z para UTC
-                periodoQuery = periodoQuery.where('createdAt', '>=', inicioTs);
-            }
-            if (dataFimStr) {
-                const fimTs = firebase.firestore.Timestamp.fromDate(new Date(dataFimStr + 'T23:59:59Z')); // Use Z para UTC
-                periodoQuery = periodoQuery.where('createdAt', '<=', fimTs);
-            }
-             // Executa a contagem para o período (1 leitura)
-             periodoPromise = periodoQuery.get({ source: 'server' }).then(snap => snap.size); 
-        } else {
-             // Se não há filtro de data, o "Período" é igual ao "Total"
-             // Para evitar outra leitura, podemos pegar o total depois ou deixar 0
-             periodoPromise = Promise.resolve(0); // Resolve como 0 por enquanto
-        }
-
-        // Executa todas as contagens de status em paralelo (4 leituras + 1 período = 5 leituras)
-         const promises = Object.entries(statElements).map(([elementId, query]) => 
-            query.get({ source: 'server' }).then(snap => ({ id: elementId, count: snap.size }))
-        );
-
-        // Adiciona a promessa do período
-        promises.push(periodoPromise.then(count => ({ id: 'stats-periodo', count: count })));
-
-        // Espera todas as contagens
-        const results = await Promise.all(promises);
-
-        // Atualiza os elementos HTML
-        results.forEach(result => {
-            const element = document.getElementById(result.id);
-            if (element) {
-                 // Se for o total do período e não havia filtro de data, usa o total geral
-                if (result.id === 'stats-periodo' && !(dataInicioStr || dataFimStr)) {
-                     const totalResult = results.find(r => r.id === 'stats-total');
-                     element.textContent = totalResult ? totalResult.count : '0';
-                } else {
-                     element.textContent = result.count;
-                }
-            }
-        });
-        console.log("Estatísticas (Retorno) atualizadas.");
-
-    } catch (error) {
-        console.error("Erro ao calcular estatísticas (Retorno):", error);
-        showToast("Erro ao carregar estatísticas.", 'error');
-        // Zera os contadores em caso de erro
-        Object.keys(statElements).forEach(id => { const el = document.getElementById(id); if(el) el.textContent = '0'; });
-        if(statsPeriodoElement) statsPeriodoElement.textContent = '0';
-    }
+    // Os outros cards mostrarão os dados baseados no filtro aplicado.
+    document.getElementById('stats-periodo').textContent = data.length;
+    document.getElementById('stats-aguardando-conferencia').textContent = data.filter(c => c.status === 'Aguardando Conferência').length;
+    document.getElementById('stats-aguardando-admin').textContent = data.filter(c => c.status === 'Aguardando Admin').length;
+    document.getElementById('stats-em-tratamento').textContent = data.filter(c => c.status === 'Em Tratamento').length;
+    document.getElementById('stats-concluido').textContent = data.filter(c => c.status === 'Concluído').length;
 }
 
-async function fetchChecklistsPage(page = 1, reset = false) {
-    if (reset) { 
-        page = 1; 
-        pageStartCursors = [null]; // Reseta cursores para nova busca/filtro
+ async function fetchChecklistsPage(page = 1, reset = false) {
+    if (reset) {
+        page = 1;
+        pageStartCursors = [null];
     }
     currentPage = page;
+
     const tabelaBody = document.getElementById('tabela-checklists');
     tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Carregando dados...</div></td></tr>`;
-
+    
     try {
-        // --- Ler Filtros ---
-        const busca = document.getElementById('filtro-busca').value; // Busca por valor exato
+        const busca = document.getElementById('filtro-busca').value.toLowerCase();
         const status = document.getElementById('filtro-status').value;
-        const dataInicioStr = document.getElementById('filtro-data-inicio').value;
-        const dataFimStr = document.getElementById('filtro-data-fim').value;
+        const dataInicio = document.getElementById('filtro-data-inicio').value;
+        const dataFim = document.getElementById('filtro-data-fim').value;
 
-        // --- Construir Query Base ---
-        let query = checklistsCollection.orderBy('createdAt', 'desc'); 
-
-        // --- Aplicar Filtros .where() ---
-        if (status) { query = query.where('status', '==', status); }
-        if (dataInicioStr) { const inicioTs = firebase.firestore.Timestamp.fromDate(new Date(dataInicioStr + 'T00:00:00Z')); query = query.where('createdAt', '>=', inicioTs); }
-        if (dataFimStr) { const fimTs = firebase.firestore.Timestamp.fromDate(new Date(dataFimStr + 'T23:59:59Z')); query = query.where('createdAt', '<=', fimTs); }
-
-        // --- Aplica Filtro de Busca (Valor Exato) ---
-        let buscaField = null; // Tenta identificar se busca é carga ou veículo
-        if (busca) {
-             // Simplificação: Assume que se for numérico é carga, senão é veículo. Ajuste se necessário.
-            if (/^\d+$/.test(busca)) { 
-                 query = query.where('secao1.carga', '==', busca); 
-                 buscaField = 'carga';
-             } else if (busca.length > 0) { // Não busca se estiver vazio
-                 query = query.where('secao1.veiculo', '==', busca); 
-                 buscaField = 'veiculo';
-             }
+        // Se qualquer filtro estiver ativo, aplicamos a lógica de filtragem local
+        if (busca || status || dataInicio || dataFim) {
+            const filteredData = allChecklists.filter(item => {
+                const matchBusca = !busca || 
+                    (item.secao1 && item.secao1.carga && item.secao1.carga.toLowerCase().includes(busca)) ||
+                    (item.secao1 && item.secao1.veiculo && item.secao1.veiculo.toLowerCase().includes(busca));
+                
+                const matchStatus = !status || item.status === status;
+                
+                let matchData = true;
+                if ((dataInicio || dataFim) && item.createdAt && item.createdAt.toDate) {
+                    const itemDate = item.createdAt.toDate();
+                    
+                    if (dataInicio && itemDate < new Date(dataInicio + 'T00:00:00Z')) {
+                        matchData = false;
+                    }
+                    if (dataFim && itemDate > new Date(dataFim + 'T23:59:59Z')) {
+                        matchData = false;
+                    }
+                } else if ((dataInicio || dataFim) && !item.createdAt) {
+                    matchData = false;
+                }
+                return matchBusca && matchStatus && matchData;
+            });
+            
+            updateStats(filteredData); // ATUALIZA OS CARDS COM OS DADOS FILTRADOS
+            renderizarTabela(filteredData);
+            document.getElementById('pagination-controls').style.display = 'none';
+            return;
+        }
+        
+        // Se não houver filtros, reseta os cards para os valores totais e busca com paginação
+        updateStats(allChecklists);
+        document.getElementById('pagination-controls').style.display = 'flex';
+        
+        let query = checklistsCollection.orderBy("createdAt", "desc");
+        const cursor = pageStartCursors[currentPage - 1];
+        if (cursor) {
+            query = query.startAfter(cursor);
         }
 
-        // --- Guarda query original para recontar stats se houver filtro ---
-         let queryParaStatsPeriodo = query; // Guarda a query com filtros aplicados
-
-        // --- Aplicar Paginação ---
-        const cursor = pageStartCursors[currentPage - 1];
-        if (cursor) { query = query.startAfter(cursor); }
         query = query.limit(ITEMS_PER_PAGE);
-
-        // --- Executar Consulta da Página ---
-        console.log("Executando query da página...");
-        const snapshot = await query.get({ source: 'server' }); // Busca dados frescos
+        
+        const snapshot = await query.get();
         const pageData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         lastFetchedPageSize = snapshot.size;
 
         if (!snapshot.empty) {
-            pageStartCursors[currentPage] = snapshot.docs[snapshot.docs.length - 1];
-        } else if (currentPage > 1) {
-             // Se a página atual está vazia mas não é a primeira, talvez tenhamos ido longe demais.
-             // Poderia tentar voltar uma página, mas por simplicidade, apenas informa.
-             console.log("Página vazia, pode ser o fim dos resultados.");
+            const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+            pageStartCursors[currentPage] = lastDoc;
         }
-
-        renderizarTabela(pageData); 
+        
+        renderizarTabela(pageData);
         updatePaginationButtons();
 
-        // *** ATUALIZA STATS DO PERÍODO SE HOUVER FILTRO ATIVO ***
-        // Isso recalcula as contagens *após* a tabela ser exibida
-        // É um custo adicional, mas necessário para refletir os filtros nos cards
-         if (status || dataInicioStr || dataFimStr || buscaField) {
-             console.log("Recalculando stats para período filtrado...");
-             // O total geral não muda com filtros
-             const totalSnap = await checklistsCollection.get({ source: 'server' });
-             document.getElementById('stats-total').textContent = totalSnap.size;
-
-             // Recalcula os outros stats com base na query filtrada (queryParaStatsPeriodo)
-              const statsPromises = [
-                 queryParaStatsPeriodo.where('status', '==', 'Aguardando Conferência').get({ source: 'server' }).then(s => s.size),
-                 queryParaStatsPeriodo.where('status', '==', 'Aguardando Admin').get({ source: 'server' }).then(s => s.size),
-                 queryParaStatsPeriodo.where('status', '==', 'Em Tratamento').get({ source: 'server' }).then(s => s.size),
-                 queryParaStatsPeriodo.where('status', '==', 'Concluído').get({ source: 'server' }).then(s => s.size),
-                 queryParaStatsPeriodo.get({ source: 'server' }).then(s => s.size) // Total no período filtrado
-             ];
-             const [confCount, adminCount, tratCount, concCount, periodoCount] = await Promise.all(statsPromises);
-             document.getElementById('stats-aguardando-conferencia').textContent = confCount;
-             document.getElementById('stats-aguardando-admin').textContent = adminCount;
-             document.getElementById('stats-em-tratamento').textContent = tratCount;
-             document.getElementById('stats-concluido').textContent = concCount;
-             document.getElementById('stats-periodo').textContent = periodoCount;
-             console.log("Stats do período filtrado atualizados.");
-         } else {
-             // Se não há filtros, chama a função normal que busca tudo
-              updateStats(); 
-         }
-         // Mostra/Esconde Paginação - Sempre mostra, `updatePaginationButtons` desabilita se necessário
-         document.getElementById('pagination-controls').style.display = 'flex';
-
     } catch (error) {
-        console.error("Erro ao buscar checklists:", error);
-        // Verifica se o erro é de índice ausente
-         if (error.code === 'failed-precondition') {
-             showToast('Erro: Índice do Firestore ausente. Verifique o console para o link de criação.', 'error');
-             // O erro no console terá um link para criar o índice necessário
-         } else {
-             showToast('Erro ao carregar checklists: ' + error.message, 'error');
-         }
+        console.error("Erro ao buscar checklists: ", error);
         tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500">Erro ao carregar os dados.</td></tr>`;
     }
 }
@@ -1971,149 +1909,72 @@ async function fetchChecklistsPage(page = 1, reset = false) {
         });
     }
 
-async function updateStatsFrota() {
-    console.log("Calculando estatísticas Frota...");
-    // Define quais cards atualizar (para Frota)
-    const statElements = {
-        'stats-total-frota': checklistsFrotaCollection, // Query base para total
-        'stats-conforme-frota': checklistsFrotaCollection.where('status', '==', 'Conforme'),
-        'stats-nao-conforme-frota': checklistsFrotaCollection.where('status', '==', 'Não Conforme')
-    };
-     const statsPeriodoElement = document.getElementById('stats-periodo-frota');
+function updateStatsFrota(data) {
+    // O card "Total Frota" sempre mostrará o número da coleção inteira.
+    document.getElementById('stats-total-frota').textContent = allChecklistsFrota.length;
 
-    // Pega filtros de data (se houver) para o card 'Período'
-    const dataInicioFrota = document.getElementById('filtro-data-inicio-frota').value;
-    const dataFimFrota = document.getElementById('filtro-data-fim-frota').value;
-    let periodoQuery = checklistsFrotaCollection; // Query inicial para período
-
-    try {
-        // Aplica filtro de data se necessário para a contagem do período
-        let periodoPromise = null;
-        if (dataInicioFrota || dataFimFrota) {
-            // Assumindo que o campo de data na frota se chama 'data' (YYYY-MM-DD string)
-            if (dataInicioFrota) {
-                periodoQuery = periodoQuery.where('data', '>=', dataInicioFrota);
-            }
-            if (dataFimFrota) {
-                periodoQuery = periodoQuery.where('data', '<=', dataFimFrota);
-            }
-            periodoPromise = periodoQuery.get({ source: 'server' }).then(snap => snap.size);
-        } else {
-            periodoPromise = Promise.resolve(0); 
-        }
-
-        // Executa contagens em paralelo (2 leituras + 1 total + 1 período = 4 leituras)
-        const promises = Object.entries(statElements).map(([elementId, query]) => 
-            query.get({ source: 'server' }).then(snap => ({ id: elementId, count: snap.size }))
-        );
-        promises.push(periodoPromise.then(count => ({ id: 'stats-periodo-frota', count: count })));
-
-        const results = await Promise.all(promises);
-
-        results.forEach(result => {
-            const element = document.getElementById(result.id);
-            if (element) {
-                if (result.id === 'stats-periodo-frota' && !(dataInicioFrota || dataFimFrota)) {
-                     const totalResult = results.find(r => r.id === 'stats-total-frota');
-                     element.textContent = totalResult ? totalResult.count : '0';
-                } else {
-                     element.textContent = result.count;
-                }
-            }
-        });
-        console.log("Estatísticas (Frota) atualizadas.");
-
-    } catch (error) {
-        console.error("Erro ao calcular estatísticas (Frota):", error);
-        showToast("Erro ao carregar estatísticas da frota.", 'error');
-        Object.keys(statElements).forEach(id => { const el = document.getElementById(id); if(el) el.textContent = '0'; });
-        if(statsPeriodoElement) statsPeriodoElement.textContent = '0';
-    }
+    // Os outros cards mostrarão os dados baseados no filtro aplicado.
+    document.getElementById('stats-periodo-frota').textContent = data.length;
+    document.getElementById('stats-conforme-frota').textContent = data.filter(c => c.status === 'Conforme').length;
+    document.getElementById('stats-nao-conforme-frota').textContent = data.filter(c => c.status === 'Não Conforme').length;
 }
 
 async function fetchChecklistsPageFrota(page = 1, reset = false) {
-    if (reset) { 
-        page = 1; 
-        pageStartCursorsFrota = [null]; 
+    if (reset) {
+        page = 1;
+        pageStartCursorsFrota = [null];
     }
     currentPageFrota = page;
-    const tabelaBody = document.getElementById('tabela-checklists-frota');
-    tabelaBody.innerHTML = `<tr><td colspan="7">Carregando...</td></tr>`;
 
+    const tabelaBody = document.getElementById('tabela-checklists-frota');
+    tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Carregando dados...</div></td></tr>`;
+    
     try {
-        // --- Ler Filtros ---
-        const buscaFrota = document.getElementById('filtro-busca-frota').value;
+        const buscaFrota = document.getElementById('filtro-busca-frota').value.toLowerCase();
         const dataInicioFrota = document.getElementById('filtro-data-inicio-frota').value;
         const dataFimFrota = document.getElementById('filtro-data-fim-frota').value;
 
-        // --- Construir Query Base ---
-        // Ordena por 'createdAt' se existir, senão por 'data' (ajuste se necessário)
-        let query = checklistsFrotaCollection.orderBy('createdAt', 'desc'); 
-
-        // --- Aplicar Filtros .where() ---
-        // Assumindo campo de data como 'data' (string YYYY-MM-DD)
-        if (dataInicioFrota) { query = query.where('data', '>=', dataInicioFrota); }
-        if (dataFimFrota) { query = query.where('data', '<=', dataFimFrota); }
-
-        // Busca Exata por Placa ou Carga
-        let buscaFieldFrota = null;
-        if (buscaFrota) {
-             // Simplificação: Tenta buscar por placa primeiro, depois por carga
-             // Pode precisar de índices compostos
-             // query = query.where('placa', '==', buscaFrota); // Ou 'carga'
-             // Por simplicidade, vamos buscar só por placa por enquanto:
-             query = query.where('placa', '==', buscaFrota);
-             buscaFieldFrota = 'placa';
-             console.warn("Busca Frota atual implementada apenas por Placa (valor exato).");
+        if (buscaFrota || dataInicioFrota || dataFimFrota) {
+            const filteredData = allChecklistsFrota.filter(item => {
+                const matchBusca = !buscaFrota || 
+                    (item.placa && item.placa.toLowerCase().includes(buscaFrota)) ||
+                    (item.carga && item.carga.toLowerCase().includes(buscaFrota));
+                const matchData = (!dataInicioFrota || item.data >= dataInicioFrota) && (!dataFimFrota || item.data <= dataFimFrota);
+                return matchBusca && matchData;
+            });
+            
+            updateStatsFrota(filteredData); // ATUALIZA OS CARDS COM OS DADOS FILTRADOS
+            renderizarTabelaFrota(filteredData);
+            document.getElementById('pagination-controls-frota').style.display = 'none';
+            return;
         }
 
-         // Guarda query para stats
-         let queryParaStatsPeriodoFrota = query;
-
-        // --- Aplicar Paginação ---
+        // Se não houver filtros, reseta os cards para os valores totais e busca com paginação
+        updateStatsFrota(allChecklistsFrota);
+        document.getElementById('pagination-controls-frota').style.display = 'flex';
+        
+        let query = checklistsFrotaCollection.orderBy("createdAt", "desc");
         const cursor = pageStartCursorsFrota[currentPageFrota - 1];
-        if (cursor) { query = query.startAfter(cursor); }
+        if (cursor) {
+            query = query.startAfter(cursor);
+        }
         query = query.limit(ITEMS_PER_PAGE);
-
-        // --- Executar Consulta da Página ---
-        console.log("Executando query da página Frota...");
-        const snapshot = await query.get({ source: 'server' });
+        
+        const snapshot = await query.get();
         const pageData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
         lastFetchedPageSizeFrota = snapshot.size;
 
         if (!snapshot.empty) {
-            pageStartCursorsFrota[currentPageFrota] = snapshot.docs[snapshot.docs.length - 1];
+            const lastDoc = snapshot.docs[snapshot.docs.length - 1];
+            pageStartCursorsFrota[currentPageFrota] = lastDoc;
         }
-
-        renderizarTabelaFrota(pageData); 
+        
+        renderizarTabelaFrota(pageData);
         updatePaginationButtonsFrota();
 
-        // *** ATUALIZA STATS DO PERÍODO SE HOUVER FILTRO ATIVO ***
-        if (dataInicioFrota || dataFimFrota || buscaFieldFrota) {
-             console.log("Recalculando stats Frota para período filtrado...");
-             const totalSnapF = await checklistsFrotaCollection.get({ source: 'server' });
-             document.getElementById('stats-total-frota').textContent = totalSnapF.size;
-
-             const statsPromisesF = [
-                 queryParaStatsPeriodoFrota.where('status', '==', 'Conforme').get({ source: 'server' }).then(s => s.size),
-                 queryParaStatsPeriodoFrota.where('status', '==', 'Não Conforme').get({ source: 'server' }).then(s => s.size),
-                 queryParaStatsPeriodoFrota.get({ source: 'server' }).then(s => s.size) // Total no período filtrado
-             ];
-             const [confCountF, naoConfCountF, periodoCountF] = await Promise.all(statsPromisesF);
-             document.getElementById('stats-conforme-frota').textContent = confCountF;
-             document.getElementById('stats-nao-conforme-frota').textContent = naoConfCountF;
-             document.getElementById('stats-periodo-frota').textContent = periodoCountF;
-             console.log("Stats Frota do período filtrado atualizados.");
-        } else {
-             updateStatsFrota(); // Chama a função que busca tudo (se não houver filtros)
-        }
-         document.getElementById('pagination-controls-frota').style.display = 'flex';
-
     } catch (error) {
-        console.error("Erro ao buscar checklists frota:", error);
-        if (error.code === 'failed-precondition') { showToast('Erro: Índice do Firestore ausente (Frota). Verifique o console.', 'error'); } 
-        else { showToast('Erro ao carregar checklists frota: ' + error.message, 'error'); }
-        tabelaBody.innerHTML = `<tr><td colspan="7">Erro ao carregar.</td></tr>`;
+        console.error("Erro ao buscar checklists de frota: ", error);
+        tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-red-500">Erro ao carregar os dados.</td></tr>`;
     }
 }
 
