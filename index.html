@@ -308,7 +308,9 @@
         </div>
     </div>
 
+
     <script>
+        
     // ===============================================================
     //                  INICIALIZAÇÃO E CONFIGURAÇÃO DO FIREBASE
     // ===============================================================
@@ -328,16 +330,14 @@
     const checklistsFrotaCollection = db.collection("checklists_frota");
     const usersCollection = db.collection("users");
     const veiculosCollection = db.collection("veiculos");
-    const configuracoesCollection = db.collection("configuracoes");
-    const tiposEmbalagemCollection = db.collection("tiposEmbalagem"); 
 
     // ===============================================================
     //                          ESTADO GLOBAL DO APP
     // ===============================================================
     let currentUser = null; 
     let veiculosList = [];
-    let currentEditingId = null;
     var tiposEmbalagemList = []; 
+    let currentEditingId = null;
     let metaDiariaRetorno = 0;  
 
     // Estado Checklist Retorno
@@ -406,19 +406,19 @@
     
     auth.onAuthStateChanged(user => {
         if (user) {
-Promise.all([
+            Promise.all([
     usersCollection.doc(user.uid).get(),
     veiculosCollection.get(),
-    configuracoesCollection.doc('metas').get(),
-    tiposEmbalagemCollection.orderBy('nome').get()
+    db.collection('configuracoes').doc('metas').get(),
+    db.collection('tiposEmbalagem').orderBy('nome').get() // <-- Busca as embalagens
 ]).then(([userDoc, veiculosSnapshot, metasDoc, embalagensSnapshot]) => {
     if (userDoc.exists) {
         currentUser = { uid: user.uid, email: user.email, role: userDoc.data().role, name: userDoc.data().name };
         veiculosList = veiculosSnapshot.docs.map(doc => doc.data().nome);
 
+        // Preenche a 'gaveta' com os dados corretos
         tiposEmbalagemList = embalagensSnapshot.docs.map(doc => doc.data().nome);
-        console.log('DEBUG: Lista de embalagens carregada do Firebase:', tiposEmbalagemList);
-
+        
         if (metasDoc.exists) {
             const hojeString = new Date().toISOString().split('T')[0];
             const dataMetaSalva = metasDoc.data().dataMeta;
@@ -433,14 +433,11 @@ Promise.all([
         document.getElementById('current-user-role').textContent = currentUser.role;
         
         updatePermissions();
-
-        // Listeners e fetches iniciais
         listenForStats(); 
         fetchChecklistsPage(1, true); 
         listenForStatsFrota();
         fetchChecklistsPageFrota(1, true);
 
-        // Mostra a seção correta baseada no perfil
         if (currentUser.role === 'Frota') {
             showAppSection('frota');
         } else {
@@ -489,10 +486,17 @@ Promise.all([
     // ===============================================================
     //                LÓGICA DE RENDERIZAÇÃO, FORMULÁRIOS E AÇÕES
     // ===============================================================
+    function toggleInputSection(checkbox, containerId) {
+    const container = document.getElementById(containerId);
+    if (container) {
+        container.style.display = checkbox.value === 'Sim' ? 'block' : 'none';
+    }
+}
 function showEmbalagemSuggestions(event) {
     const input = event.target;
     const suggestionsContainer = input.nextElementSibling;
     const value = input.value.toLowerCase();
+
 
     suggestionsContainer.innerHTML = '';
     if (value.length === 0) {
@@ -569,13 +573,6 @@ async function buscarProduto(event) {
         }, 5000);
     }
     
-    function toggleComportamentoObs(show) {
-        const detailsDiv = document.getElementById('comportamento-obs-details');
-        if (detailsDiv) {
-            detailsDiv.style.display = show ? 'block' : 'none';
-        }
-    }
-
     // --- NAVEGAÇÃO E CONTROLES DE UI ---
     const statusClasses = { 
         'Aguardando Conferência': 'status-aguardando-conferencia', 
@@ -773,63 +770,71 @@ function addSobraInput(containerId) {
 }
 
     // --- LÓGICA DOS FORMULÁRIOS (GERAÇÃO DINÂMICA) - RETORNO ---
-    function iniciarNovoChecklist() {
-        currentEditingId = null;
-        const formContainer = document.getElementById('form-container');
-        formContainer.innerHTML = `
-            <div class="flex justify-between items-start">
-                <h2 class="text-lg font-bold text-gray-800 mb-4">Novo Checklist de Retorno</h2>
-                <button onclick="navigateTo('view-dashboard', 'retorno')" class="text-sm text-gray-600 hover:text-gray-900">&larr; Voltar ao Painel</button>
-            </div>
-            <form id="checklist-form">
-                <fieldset class="space-y-4">
-                    <h3 class="font-semibold text-gray-700 border-b pb-2">1 - Documentos</h3>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div><label for="s1-data" class="text-sm font-medium text-gray-700">Data</label><input type="date" id="s1-data" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                        <div><label for="s1-numero_carga" class="text-sm font-medium text-gray-700">Número da Carga</label><input type="text" id="s1-numero_carga" placeholder="Insira o número" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                        <div class="sm:col-span-2 relative">
-                            <label for="s1-veiculo" class="text-sm font-medium text-gray-700">Veículo</label>
-                            <input type="text" id="s1-veiculo" placeholder="Digite para buscar..." required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" autocomplete="off">
-                            <div id="s1-veiculo-suggestions" class="autocomplete-suggestions hidden rounded-b-md shadow-lg"></div>
+function iniciarNovoChecklist() {
+    currentEditingId = null;
+    const formContainer = document.getElementById('form-container');
+    
+    // Lista de todos os campos que usarão a lógica Sim/Não
+    const camposNaoConforme = [
+        { id: 'falta_nf', label: 'Falta de N.F?' },
+        { id: 'falta_assinatura', label: 'Falta de Assinatura N.F?' },
+        { id: 'foto_canhoto', label: 'Foto Canhoto N.F?' },
+        { id: 'dev_falta_nf', label: 'Dev. Falta N.F?' },
+        { id: 'dev_total', label: 'Dev. Total N.F?' },
+        { id: 'dev_parcial', label: 'Dev. Parcial N.F?' },
+        { id: 'retira_oc', label: 'Retira O.C?' }
+    ];
+
+    let naoConformeHTML = '';
+    camposNaoConforme.forEach(campo => {
+        naoConformeHTML += `
+            <div class="border-t pt-3">
+                <label class="text-sm font-medium text-gray-700">${campo.label}</label>
+                <div class="flex space-x-6 mt-2">
+                    <label class="flex items-center"><input type="radio" name="s1-tem_${campo.id}" value="Sim" onchange="toggleInputSection(this, 's1-${campo.id}-wrapper')" class="mr-2 h-4 w-4"> Sim</label>
+                    <label class="flex items-center"><input type="radio" name="s1-tem_${campo.id}" value="Não" onchange="toggleInputSection(this, 's1-${campo.id}-wrapper')" class="mr-2 h-4 w-4" checked> Não</label>
+                </div>
+                <div id="s1-${campo.id}-wrapper" class="hidden mt-2">
+                    <div id="s1-${campo.id}-container" class="space-y-2">
+                        <div class="flex items-center space-x-2">
+                            <input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <button type="button" onclick="addDynamicInput('s1-${campo.id}-container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
                         </div>
                     </div>
-                    <fieldset class="border-t pt-4"><legend class="text-sm font-medium text-gray-700 mb-2">Retorno de notas não conforme</legend>
-                        <div class="space-y-3">
-                            <div><label class="text-sm text-gray-600">Falta de N.F N°</label><div id="s1-falta_nf_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-falta_nf_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                            <div><label class="text-sm text-gray-600">Falta de Assinatura N.F N°</label><div id="s1-falta_assinatura_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-falta_assinatura_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                            <div><label class="text-sm text-gray-600">Foto Canhoto N.F N°</label><div id="s1-foto_canhoto_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-foto_canhoto_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                            <div><label class="text-sm text-gray-600">Dev. Falta N.F N°</label><div id="s1-dev_falta_nf_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-dev_falta_nf_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                            <div><label class="text-sm text-gray-600">Dev. Total N.F N°</label><div id="s1-dev_total_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-dev_total_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                            <div><label class="text-sm text-gray-600">Dev. Parcial N.F N°</label><div id="s1-dev_parcial_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-dev_parcial_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                            <div><label class="text-sm text-gray-600">Retira O.C N°</label><div id="s1-retira_oc_container" class="space-y-2 mt-1"><div class="flex items-center space-x-2"><input type="text" placeholder="Ex: 12345, 67890" class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"><button type="button" onclick="addDynamicInput('s1-retira_oc_container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button></div></div></div>
-                        </div>
-                    </fieldset>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4"><div><label class="text-sm font-medium text-gray-700">Cartão de Combustível</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Não" class="mr-2 h-4 w-4"> Não</label><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Agregado" class="mr-2 h-4 w-4"> Agregado</label></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-sm font-medium text-gray-700">Celular</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-celular" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-celular" value="Não" class="mr-2 h-4 w-4"> Não</label><label class="flex items-center"><input type="radio" name="s1-celular" value="Agregado" class="mr-2 h-4 w-4"> Agregado</label></div></div><div><label class="text-sm font-medium text-gray-700">Carregador</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-carregador" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-carregador" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div></div></div>
-                        
-                        <div class="grid grid-cols-1 gap-4 border-t pt-4">
-                            <div>
-                                <label class="text-sm font-medium text-gray-700">Houve desvio comportamental da equipe durante a rota?</label>
-                                <div class="flex space-x-6 mt-2">
-                                    <label class="flex items-center">
-                                        <input type="radio" name="s1-comportamento" value="Sim" class="mr-2 h-4 w-4" onchange="toggleComportamentoObs(true)"> Sim
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="radio" name="s1-comportamento" value="Não" class="mr-2 h-4 w-4" onchange="toggleComportamentoObs(false)" checked> Não
-                                    </label>
-                                </div>
-                            </div>
-                            <div id="comportamento-obs-details" class="hidden">
-                                <label for="s1-comportamento_obs" class="text-sm font-medium text-gray-700">Observação sobre o comportamento:</label>
-                                <textarea id="s1-comportamento_obs" placeholder="Descreva o que aconteceu..." rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></textarea>
-                            </div>
-                        </div>
-                         <button type="button" onclick="salvarEtapa1()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Conferência</button>
-                </fieldset>
-            </form>
+                </div>
+            </div>
         `;
-        navigateTo('view-form', 'retorno');
-        setupAutocomplete();
-    }
+    });
+
+    formContainer.innerHTML = `
+        <div class="flex justify-between items-start">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">Novo Checklist de Retorno</h2>
+            <button onclick="navigateTo('view-dashboard', 'retorno')" class="text-sm text-gray-600 hover:text-gray-900">&larr; Voltar ao Painel</button>
+        </div>
+        <form id="checklist-form">
+            <fieldset class="space-y-4">
+                <h3 class="font-semibold text-gray-700 border-b pb-2">1 - Documentos</h3>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div><label for="s1-data" class="text-sm font-medium text-gray-700">Data</label><input type="date" id="s1-data" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div><label for="s1-numero_carga" class="text-sm font-medium text-gray-700">Número da Carga</label><input type="text" id="s1-numero_carga" placeholder="Insira o número" required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                    <div class="sm:col-span-2 relative">
+                        <label for="s1-veiculo" class="text-sm font-medium text-gray-700">Veículo</label>
+                        <input type="text" id="s1-veiculo" placeholder="Digite para buscar..." required class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3" autocomplete="off">
+                        <div id="s1-veiculo-suggestions" class="autocomplete-suggestions hidden rounded-b-md shadow-lg"></div>
+                    </div>
+                </div>
+                <fieldset class="space-y-3">
+                    <legend class="text-base font-medium text-gray-900 pt-4">Retorno de notas não conforme</legend>
+                    ${naoConformeHTML}
+                </fieldset>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4"><div><label class="text-sm font-medium text-gray-700">Cartão de Combustível</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Não" class="mr-2 h-4 w-4"> Não</label><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Agregado" class="mr-2 h-4 w-4"> Agregado</label></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-sm font-medium text-gray-700">Celular</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-celular" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-celular" value="Não" class="mr-2 h-4 w-4"> Não</label><label class="flex items-center"><input type="radio" name="s1-celular" value="Agregado" class="mr-2 h-4 w-4"> Agregado</label></div></div><div><label class="text-sm font-medium text-gray-700">Carregador</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-carregador" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-carregador" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div></div></div>
+                <button type="button" onclick="salvarEtapa1()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Conferência</button>
+            </fieldset>
+        </form>
+    `;
+    navigateTo('view-form', 'retorno');
+    setupAutocomplete();
+}
     
 function iniciarEtapa(etapa, id) {
     currentEditingId = id;
@@ -856,13 +861,8 @@ function iniciarEtapa(etapa, id) {
                 <p><strong>Data:</strong> ${dataFormatada}</p><p><strong>Veículo:</strong> ${secao1.veiculo || 'N/A'}</p>
                 <div class="mt-2 pt-2 border-t"><h5 class="font-semibold mb-1">Notas não Conforme:</h5><p><strong>Falta N.F:</strong> ${(secao1.falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Falta Assinatura:</strong> ${(secao1.falta_assinatura || []).join(', ') || 'Nenhuma'}</p><p><strong>Foto Canhoto:</strong> ${(secao1.foto_canhoto || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Falta N.F:</strong> ${(secao1.dev_falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Total:</strong> ${(secao1.dev_total || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Parcial:</strong> ${(secao1.dev_parcial || []).join(', ') || 'Nenhuma'}</p><p><strong>Retira O.C:</strong> ${(secao1.retira_oc || []).join(', ') || 'Nenhuma'}</p></div>
                 <div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-3 gap-2"><div><strong>Cartão Comb.:</strong> ${secao1.cartao_combustivel || 'N/A'}</div><div><strong>Celular:</strong> ${secao1.celular || 'N/A'}</div><div><strong>Carregador:</strong> ${secao1.carregador || 'N/A'}</div></div>
-                
-                <div class="mt-2 pt-2 border-t">
-                    <p><strong>Problema de Comportamento:</strong> ${secao1.comportamento || 'N/A'}</p>
-                    ${secao1.comportamento === 'Sim' ? `<p class="pl-2"><strong>Obs:</strong> ${secao1.comportamento_obs || 'Nenhuma'}</p>` : ''}
-                </div>
-                  </div>`;
-  }
+            </div>`;
+    }
     
     if (etapa >= 3) {
         let divergenciasHTML = '';
@@ -914,147 +914,191 @@ function iniciarEtapa(etapa, id) {
         summaryHTML += frotaSummaryHTML;
     }
 
-    if (etapa === 2) {
-        formHTML = `
-            <fieldset class="space-y-4">
-                <h3 class="font-semibold text-gray-700 border-b pb-2">2° ATIVOS / PRODUTOS DIVERGENTE</h3>
-                <div class="pt-2">
-                    <label class="text-sm font-medium text-gray-700">Ativos retornados (quantidade):</label>
-                    <div class="grid grid-cols-2 gap-x-4 gap-y-3 mt-2">
-                        <div><label for="s2-qtd_cacamba" class="text-xs text-gray-600">Caçamba</label><input type="number" id="s2-qtd_cacamba" value="${secao2.cacamba || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                        <div><label for="s2-qtd_gaiola" class="text-xs text-gray-600">Gaiola</label><input type="number" id="s2-qtd_gaiola" value="${secao2.gaiola || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                        <div><label for="s2-qtd_palete" class="text-xs text-gray-600">Palete</label><input type="number" id="s2-qtd_palete" value="${secao2.palete || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                        <div><label for="s2-qtd_chapatex" class="text-xs text-gray-600">Chapatex</label><input type="number" id="s2-qtd_chapatex" value="${secao2.chapatex || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
-                    </div>
+if (etapa === 2) {
+    formHTML = `
+        <fieldset class="space-y-4">
+            <h3 class="font-semibold text-gray-700 border-b pb-2">2° ATIVOS / PRODUTOS DIVERGENTE</h3>
+            <div class="pt-2">
+                <label class="text-sm font-medium text-gray-700">Ativos retornados (quantidade):</label>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-3 mt-2">
+                    <div><label for="s2-qtd_cacamba" class="text-xs text-gray-600">Caçamba</label><input type="number" id="s2-qtd_cacamba" value="${secao2.cacamba || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                    <div><label for="s2-qtd_gaiola" class="text-xs text-gray-600">Gaiola</label><input type="number" id="s2-qtd_gaiola" value="${secao2.gaiola || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                    <div><label for="s2-qtd_palete" class="text-xs text-gray-600">Palete</label><input type="number" id="s2-qtd_palete" value="${secao2.palete || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
+                    <div><label for="s2-qtd_chapatex" class="text-xs text-gray-600">Chapatex</label><input type="number" id="s2-qtd_chapatex" value="${secao2.chapatex || 0}" min="0" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm"></div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
-                    <div><label class="text-sm font-medium text-gray-700">Produtos conferidos?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div>
-                    <div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" class="mr-2 h-4 w-4" onchange="toggleDivergencia(true)"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" class="mr-2 h-4 w-4" onchange="toggleDivergencia(false)" checked> Não</label></div></div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4">
+                <div><label class="text-sm font-medium text-gray-700">Produtos conferidos?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Sim" class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s2-produtos_conferidos" value="Não" class="mr-2 h-4 w-4"> Não</label></div></div>
+                <div><label class="text-sm font-medium text-gray-700">Carga divergente?</label><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Sim" class="mr-2 h-4 w-4" onchange="toggleDivergencia(true)"> Sim</label><label class="flex items-center"><input type="radio" name="s2-carga_divergente" value="Não" class="mr-2 h-4 w-4" onchange="toggleDivergencia(false)" checked> Não</label></div></div>
+            </div>
+            <div class="border-t pt-4">
+                <label class="text-sm font-medium text-gray-700">Tem sobra?</label>
+                <div class="flex space-x-6 mt-2">
+                    <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Sim" class="mr-2 h-4 w-4" onchange="toggleSobra(true)"> Sim</label>
+                    <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Não" class="mr-2 h-4 w-4" onchange="toggleSobra(false)" checked> Não</label>
                 </div>
-                <div class="border-t pt-4">
-                    <label class="text-sm font-medium text-gray-700">Tem sobra?</label>
-                    <div class="flex space-x-6 mt-2">
-                        <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Sim" class="mr-2 h-4 w-4" onchange="toggleSobra(true)"> Sim</label>
-                        <label class="flex items-center"><input type="radio" name="s2-tem_sobra" value="Não" class="mr-2 h-4 w-4" onchange="toggleSobra(false)" checked> Não</label>
-                    </div>
-                </div>
-                <div id="sobra-details" class="hidden space-y-4 border-t pt-4">
-                    <div id="sobra-container">
-                        <h4 class="text-sm font-semibold text-gray-600">Detalhes da Sobra</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-start mt-2">
-                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
-                            <div class="relative">
-                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
-                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                                <button type="button" onclick="addSobraInput('sobra-container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
-                            </div>
+            </div>
+            <div id="sobra-details" class="hidden space-y-4 border-t pt-4">
+                <div id="sobra-container">
+                    <h4 class="text-sm font-semibold text-gray-600">Detalhes da Sobra</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2 items-start mt-2">
+                        <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                        <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                        <div class="relative">
+                            <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                            <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <button type="button" onclick="addSobraInput('sobra-container')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
                         </div>
                     </div>
                 </div>
-                <div id="divergencia-details" class="hidden space-y-4 border-t pt-4">
-                    <div id="divergencia-tipo-dev_total">
-                        <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Total)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
-                            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
-                            <div class="relative">
-                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
-                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                                <button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_total')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
-                            </div>
+            </div>
+            <div id="divergencia-details" class="hidden space-y-4 border-t pt-4">
+                <div id="divergencia-tipo-dev_total">
+                    <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Total)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
+                        <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                        <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                        <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                        <div class="relative">
+                            <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                            <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
                         </div>
-                    </div>
-                    <div id="divergencia-tipo-dev_parcial">
-                        <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Parcial)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
-                            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
-                            <div class="relative">
-                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
-                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                                <button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_parcial')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="divergencia-tipo-falta">
-                        <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Falta)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
-                            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
-                            <div class="relative">
-                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
-                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                                <button type="button" onclick="addDivergenciaInput('divergencia-tipo-falta')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div id="divergencia-tipo-retira_oc">
-                        <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Retira O.C)</h4>
-                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
-                            <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                            <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
-                            <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
-                            <div class="relative">
-                                <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
-                                <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
-                            </div>
-                            <div class="flex items-center space-x-2">
-                                <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
-                                <button type="button" onclick="addDivergenciaInput('divergencia-tipo-retira_oc')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
-                            </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_total')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
                         </div>
                     </div>
                 </div>
-                <button type="button" onclick="salvarEtapa2()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Admin</button>
-            </fieldset>`;
-    } else if (etapa === 3) {
-        formHTML = `
-            <fieldset class="space-y-4">
-                <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-                    <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 1 - Documentos)</h4>
-                    <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Tratado" ${radioChecked(secao3.tratativa1_status, 'Tratado')} class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Em tratamento" ${radioChecked(secao3.tratativa1_status, 'Em tratamento')} class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
-                    <div class="mt-2"><label for="tratativa1_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa1_obs" placeholder="Descreva a resolução para os documentos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">${secao3.tratativa1_obs || ''}</textarea></div>
+                <div id="divergencia-tipo-dev_parcial">
+                    <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Dev. Parcial)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
+                        <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                        <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                        <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                        <div class="relative">
+                            <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                            <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <button type="button" onclick="addDivergenciaInput('divergencia-tipo-dev_parcial')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
-                    <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 2 - Produtos)</h4>
-                    <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Tratado" ${radioChecked(secao3.tratativa2_status, 'Tratado')} class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Em tratamento" ${radioChecked(secao3.tratativa2_status, 'Em tratamento')} class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
-                    <div class="mt-2"><label for="tratativa2_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa2_obs" placeholder="Descreva a resolução para os produtos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">${secao3.tratativa2_obs || ''}</textarea></div>
+                <div id="divergencia-tipo-falta">
+                    <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Falta)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
+                        <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                        <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                        <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                        <div class="relative">
+                            <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                            <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <button type="button" onclick="addDivergenciaInput('divergencia-tipo-falta')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="divergencia-tipo-retira_oc">
+                    <h4 class="text-sm font-semibold text-gray-600">Detalhes Divergência (Retira O.C)</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-2 items-start mt-2">
+                        <input type="text" placeholder="N.F" class="nf block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                        <input type="text" placeholder="Cód. Produto" class="produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" onblur="buscarProduto(event)">
+                        <input type="text" placeholder="Descrição" class="descricao-produto block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm bg-gray-50">
+                        <div class="relative">
+                            <input type="text" placeholder="Embalagem" class="embalagem-input block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm" oninput="showEmbalagemSuggestions(event)" autocomplete="off">
+                            <div class="autocomplete-suggestions embalagem-suggestions hidden"></div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <input type="number" placeholder="Qtd" min="0" class="qtd block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">
+                            <button type="button" onclick="addDivergenciaInput('divergencia-tipo-retira_oc')" class="bg-blue-500 text-white rounded-full p-1 h-6 w-6 flex items-center justify-center hover:bg-blue-600">+</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="border-t pt-4">
+                <label class="text-sm font-medium text-gray-700">Como você avalia a arrumação do baú?</label>
+                <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                    <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Padrão" ${radioChecked(secao3.obs_arrumacao, 'Padrão')} class="mr-2 h-4 w-4"> Padrão</label>
+                    <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Bom" ${radioChecked(secao3.obs_arrumacao, 'Bom')} class="mr-2 h-4 w-4"> Bom</label>
+                    <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Regular" ${radioChecked(secao3.obs_arrumacao, 'Regular')} class="mr-2 h-4 w-4"> Regular</label>
+                    <label class="flex items-center"><input type="radio" name="s3-obs_arrumacao" value="Ruim" ${radioChecked(secao3.obs_arrumacao, 'Ruim')} class="mr-2 h-4 w-4"> Ruim</label>
+                </div>
+            </div>
+
+            <button type="button" onclick="salvarEtapa2()" class="mt-4 w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors shadow">Salvar e Enviar p/ Admin</button>
+        </fieldset>`;
+}
+else if (etapa === 3) {
+    formHTML = `
+        <fieldset class="space-y-4">
+            <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+                <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 1 - Documentos)</h4>
+                <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Tratado" ${radioChecked(secao3.tratativa1_status, 'Tratado')} class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa1_status" value="Em tratamento" ${radioChecked(secao3.tratativa1_status, 'Em tratamento')} class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
+                <div class="mt-2"><label for="tratativa1_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa1_obs" placeholder="Descreva a resolução para os documentos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">${secao3.tratativa1_obs || ''}</textarea></div>
+            </div>
+            <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm">
+                <h4 class="font-bold mb-2 text-yellow-800">Tratativa da Gestão (Etapa 2 - Produtos)</h4>
+                <div><div class="flex space-x-6 mt-2"><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Tratado" ${radioChecked(secao3.tratativa2_status, 'Tratado')} class="mr-2 h-4 w-4"> Tratado</label><label class="flex items-center"><input type="radio" name="tratativa2_status" value="Em tratamento" ${radioChecked(secao3.tratativa2_status, 'Em tratamento')} class="mr-2 h-4 w-4"> Em tratamento</label></div></div>
+                <div class="mt-2"><label for="tratativa2_obs" class="text-xs text-gray-600">Observação da Tratativa</label><textarea id="tratativa2_obs" placeholder="Descreva a resolução para os produtos..." rows="2" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 text-sm">${secao3.tratativa2_obs || ''}</textarea></div>
+            </div>
+
+            <h3 class="font-semibold text-gray-700 border-b pb-2">3 - Sala (Administrativa)</h3>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div><label for="s3-motorista" class="text-sm font-medium text-gray-700">Motorista</label><input type="text" id="s3-motorista" value="${secao3.motorista || ''}" placeholder="Nome do motorista" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                <div><label for="s3-ajudante1" class="text-sm font-medium text-gray-700">Ajudante 1</label><input type="text" id="s3-ajudante1" value="${secao3.ajudante1 || ''}" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                <div class="sm:col-span-2"><label for="s3-ajudante2" class="text-sm font-medium text-gray-700">Ajudante 2 (Opcional)</label><input type="text" id="s3-ajudante2" value="${secao3.ajudante2 || ''}" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+            </div>
+            <div class="border-t pt-4 space-y-4">
+
+                <div>
+                    <label class="text-sm font-medium text-gray-700">A validação da marcação no Fusion foi realizada conforme o procedimento?</label>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                        <label class="flex items-center"><input type="radio" name="s3-obs_fusion" value="Conforme" ${radioChecked(secao3.obs_fusion, 'Conforme')} class="mr-2 h-4 w-4"> Conforme</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_fusion" value="Não Conforme" ${radioChecked(secao3.obs_fusion, 'Não Conforme')} class="mr-2 h-4 w-4"> Não Conforme</label>
+                    </div>
                 </div>
 
-                <h3 class="font-semibold text-gray-700 border-b pb-2">3 - Sala (Administrativa)</h3>
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
-                    <div><label for="s3-motorista" class="text-sm font-medium text-gray-700">Motorista</label><input type="text" id="s3-motorista" value="${secao3.motorista || ''}" placeholder="Nome do motorista" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div><label for="s3-ajudante1" class="text-sm font-medium text-gray-700">Ajudante 1</label><input type="text" id="s3-ajudante1" value="${secao3.ajudante1 || ''}" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div class="sm:col-span-2"><label for="s3-ajudante2" class="text-sm font-medium text-gray-700">Ajudante 2 (Opcional)</label><input type="text" id="s3-ajudante2" value="${secao3.ajudante2 || ''}" placeholder="Nome do ajudante" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+                <div>
+                    <label class="text-sm font-medium text-gray-700">Como você avalia o processo de lançamento de ocorrências?</label>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Excelente" ${radioChecked(secao3.obs_ocorrencias, 'Excelente')} class="mr-2 h-4 w-4"> Excelente</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Bom" ${radioChecked(secao3.obs_ocorrencias, 'Bom')} class="mr-2 h-4 w-4"> Bom</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Regular" ${radioChecked(secao3.obs_ocorrencias, 'Regular')} class="mr-2 h-4 w-4"> Regular</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_ocorrencias" value="Ruim" ${radioChecked(secao3.obs_ocorrencias, 'Ruim')} class="mr-2 h-4 w-4"> Ruim</label>
+                    </div>
                 </div>
-                <div class="border-t pt-4 space-y-3">
-                    <div><label for="s3-obs_arrumacao" class="text-sm font-medium text-gray-700">Orientação quanto à arrumação do baú</label><input type="text" id="s3-obs_arrumacao" value="${secao3.obs_arrumacao || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div><label for="s3-obs_fusion" class="text-sm font-medium text-gray-700">Validação da marcação no Fusion</label><input type="text" id="s3-obs_fusion" value="${secao3.obs_fusion || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div><label for="s3-obs_ocorrencias" class="text-sm font-medium text-gray-700">Lançamento das ocorrências</label><input type="text" id="s3-obs_ocorrencias" value="${secao3.obs_ocorrencias || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div><label for="s3-obs_devolucao" class="text-sm font-medium text-gray-700">Geração das cargas de devolução</label><input type="text" id="s3-obs_devolucao" value="${secao3.obs_devolucao || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div><label for="s3-obs_feedback" class="text-sm font-medium text-gray-700">Feedback da rota</label><input type="text" id="s3-obs_feedback" value="${secao3.obs_feedback || ''}" placeholder="Obs.:" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
-                    <div><label for="s3-obs_gerais" class="text-sm font-medium text-gray-700">Observações Gerais</label><textarea id="s3-obs_gerais" placeholder="Adicione aqui quaisquer observações gerais..." rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">${secao3.obs_gerais || ''}</textarea></div>
-                    <div><label for="s3-responsavel" class="text-sm font-medium text-gray-700">Responsável Conferência</label><input type="text" id="s3-responsavel" value="${secao3.responsavel || ''}" required placeholder="Nome completo do responsável" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+
+                <div>
+                    <label class="text-sm font-medium text-gray-700">A geração das cargas de devolução seguiu o padrão?</label>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                        <label class="flex items-center"><input type="radio" name="s3-obs_devolucao" value="Sim" ${radioChecked(secao3.obs_devolucao, 'Sim')} class="mr-2 h-4 w-4"> Sim</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_devolucao" value="Não" ${radioChecked(secao3.obs_devolucao, 'Não')} class="mr-2 h-4 w-4"> Não</label>
+                    </div>
                 </div>
-                <button type="button" onclick="salvarEtapa3()" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors shadow">Concluir Checklist</button>
-            </fieldset>`;
-    }
+
+                <div>
+                    <label class="text-sm font-medium text-gray-700">Feedback da rota</label>
+                    <div class="flex flex-wrap gap-x-4 gap-y-2 mt-2">
+                        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Excelente" ${radioChecked(secao3.obs_feedback, 'Excelente')} class="mr-2 h-4 w-4"> Excelente</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Bom" ${radioChecked(secao3.obs_feedback, 'Bom')} class="mr-2 h-4 w-4"> Bom</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Regular" ${radioChecked(secao3.obs_feedback, 'Regular')} class="mr-2 h-4 w-4"> Regular</label>
+                        <label class="flex items-center"><input type="radio" name="s3-obs_feedback" value="Ruim" ${radioChecked(secao3.obs_feedback, 'Ruim')} class="mr-2 h-4 w-4"> Ruim</label>
+                    </div>
+                </div>
+
+                <div><label for="s3-obs_gerais" class="text-sm font-medium text-gray-700">Observações Gerais</label><textarea id="s3-obs_gerais" placeholder="Adicione aqui quaisquer observações gerais..." rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">${secao3.obs_gerais || ''}</textarea></div>
+                <div><label for="s3-responsavel" class="text-sm font-medium text-gray-700">Responsável Conferência</label><input type="text" id="s3-responsavel" value="${secao3.responsavel || ''}" required placeholder="Nome completo do responsável" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3"></div>
+            </div>
+            <button type="button" onclick="salvarEtapa3()" class="mt-4 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition-colors shadow">Concluir Checklist</button>
+        </fieldset>`;
+}
 
     formContainer.innerHTML = `
         <div class="flex justify-between items-start">
@@ -1112,140 +1156,149 @@ function getSobraInputValues(containerId) {
 }
 
 
-    function salvarEtapa1() {
-        const cargaInput = document.getElementById('s1-numero_carga');
-        if(!cargaInput || !cargaInput.value) { showToast('Número da carga é obrigatório.', 'error'); return; }
+function salvarEtapa1() {
+    const cargaInput = document.getElementById('s1-numero_carga');
+    if(!cargaInput || !cargaInput.value) { showToast('Número da carga é obrigatório.', 'error'); return; }
 
-        const cartaoCombustivel = document.querySelector('input[name="s1-cartao_combustivel"]:checked');
-  const celular = document.querySelector('input[name="s1-celular"]:checked');
-  const carregador = document.querySelector('input[name="s1-carregador"]:checked');
-        const comportamento = document.querySelector('input[name="s1-comportamento"]:checked'); // ⬅️ ADICIONADO
+    const cartaoCombustivel = document.querySelector('input[name="s1-cartao_combustivel"]:checked');
+    const celular = document.querySelector('input[name="s1-celular"]:checked');
+    const carregador = document.querySelector('input[name="s1-carregador"]:checked');
 
-  if (!cartaoCombustivel || !celular || !carregador || !comportamento) { // ⬅️ ATUALIZADO
-  showToast('Por favor, marque todas as opções (Cartão, Celular, Carregador, Comportamento).', 'error'); // ⬅️ ATUALIZADO
-  return;
-  }
-
-        const novoChecklist = {
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            status: 'Aguardando Conferência',
-            criadoPor: currentUser.name,
-            conferidoPor: null,
-            finalizadoPor: null,
-            secao1: {
-                carga: document.getElementById('s1-numero_carga').value,
-                veiculo: document.getElementById('s1-veiculo').value,
-                data: document.getElementById('s1-data').value,
-                falta_nf: getDynamicInputValues('s1-falta_nf_container'),
-                falta_assinatura: getDynamicInputValues('s1-falta_assinatura_container'),
-                foto_canhoto: getDynamicInputValues('s1-foto_canhoto_container'),
-                dev_falta_nf: getDynamicInputValues('s1-dev_falta_nf_container'),
-                dev_total: getDynamicInputValues('s1-dev_total_container'),
-                dev_parcial: getDynamicInputValues('s1-dev_parcial_container'),
-                retira_oc: getDynamicInputValues('s1-retira_oc_container'),
-                cartao_combustivel: cartaoCombustivel.value,
-                celular: celular.value,
-                carregador: carregador.value,
-                comportamento: comportamento.value,
-                comportamento_obs: document.getElementById('s1-comportamento_obs').value || ''
-            },
-            secao2: {},
-            secao3: {}
-        };
-
-        checklistsCollection.add(novoChecklist)
-            .then(() => {
-                showToast('Checklist criado com sucesso!');
-                navigateTo('view-dashboard', 'retorno');
-                fetchChecklistsPage(1, true); 
-            })
-            .catch(error => {
-                console.error("Erro ao adicionar: ", error);
-                showToast('Erro ao criar checklist.', 'error');
-            });
+    if (!cartaoCombustivel || !celular || !carregador) {
+        showToast('Por favor, marque todas as opções (Cartão, Celular, Carregador).', 'error');
+        return;
     }
 
-    function salvarEtapa2() {
-        if (!currentEditingId) return;
-        
-        const dataToUpdate = {
-            status: 'Aguardando Admin',
-            conferidoPor: currentUser.name,
-            secao2: {
-                cacamba: document.getElementById('s2-qtd_cacamba').value,
-                gaiola: document.getElementById('s2-qtd_gaiola').value,
-                palete: document.getElementById('s2-qtd_palete').value,
-                chapatex: document.getElementById('s2-qtd_chapatex').value,
-                produtos_conferidos: document.querySelector('input[name="s2-produtos_conferidos"]:checked')?.value || '',
-                carga_divergente: document.querySelector('input[name="s2-carga_divergente"]:checked')?.value || '',
-                tem_sobra: document.querySelector('input[name="s2-tem_sobra"]:checked')?.value || '',
-                sobras: getSobraInputValues('sobra-container'),
-                divergencia_dev_total: getDivergenciaInputValues('divergencia-tipo-dev_total'),
-                divergencia_dev_parcial: getDivergenciaInputValues('divergencia-tipo-dev_parcial'),
-                divergencia_falta: getDivergenciaInputValues('divergencia-tipo-falta'),
-                divergencia_retira_oc: getDivergenciaInputValues('divergencia-tipo-retira_oc'),
-            }
-        };
-        checklistsCollection.doc(currentEditingId).set(dataToUpdate, { merge: true })
-            .then(() => {
-                showToast('Etapa 2 salva com sucesso!');
-                navigateTo('view-dashboard', 'retorno');
-                fetchChecklistsPage(currentPage); 
-            })
-            .catch(error => {
-                console.error("Erro ao atualizar: ", error)
-                showToast('Erro ao salvar etapa 2.', 'error');
-            });
-    }
+    const getDataIfSim = (id) => {
+        const radioSim = document.querySelector(`input[name="s1-tem_${id}"]:checked`);
+        return (radioSim && radioSim.value === 'Sim') ? getDynamicInputValues(`s1-${id}-container`) : [];
+    };
 
-    function salvarEtapa3() {
-        if (!currentEditingId) return;
-        if(!document.getElementById('s3-responsavel').value) { showToast('Responsável é obrigatório.', 'error'); return; }
-        
-        const tratativa1_status = document.querySelector('input[name="tratativa1_status"]:checked')?.value;
-        const tratativa2_status = document.querySelector('input[name="tratativa2_status"]:checked')?.value;
+    const novoChecklist = {
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        status: 'Aguardando Conferência',
+        criadoPor: currentUser.name,
+        conferidoPor: null,
+        finalizadoPor: null,
+        secao1: {
+            carga: document.getElementById('s1-numero_carga').value,
+            veiculo: document.getElementById('s1-veiculo').value,
+            data: document.getElementById('s1-data').value,
+            falta_nf: getDataIfSim('falta_nf'),
+            falta_assinatura: getDataIfSim('falta_assinatura'),
+            foto_canhoto: getDataIfSim('foto_canhoto'),
+            dev_falta_nf: getDataIfSim('dev_falta_nf'),
+            dev_total: getDataIfSim('dev_total'),
+            dev_parcial: getDataIfSim('dev_parcial'),
+            retira_oc: getDataIfSim('retira_oc'),
+            cartao_combustivel: cartaoCombustivel.value,
+            celular: celular.value,
+            carregador: carregador.value,
+        },
+        secao2: {},
+        secao3: {}
+    };
 
-        if (!tratativa1_status || !tratativa2_status) {
-            showToast('Por favor, marque o status para todas as tratativas.', 'error');
-            return;
+    checklistsCollection.add(novoChecklist)
+        .then(() => {
+            showToast('Checklist criado com sucesso!');
+            navigateTo('view-dashboard', 'retorno');
+            fetchChecklistsPage(1, true); 
+        })
+        .catch(error => {
+            console.error("Erro ao adicionar: ", error);
+            showToast('Erro ao criar checklist.', 'error');
+        });
+}
+
+function salvarEtapa2() {
+    if (!currentEditingId) return;
+
+    const dataToUpdate = {
+        status: 'Aguardando Admin',
+        conferidoPor: currentUser.name,
+        secao2: {
+            cacamba: document.getElementById('s2-qtd_cacamba').value,
+            gaiola: document.getElementById('s2-qtd_gaiola').value,
+            palete: document.getElementById('s2-qtd_palete').value,
+            chapatex: document.getElementById('s2-qtd_chapatex').value,
+            produtos_conferidos: document.querySelector('input[name="s2-produtos_conferidos"]:checked')?.value || '',
+            carga_divergente: document.querySelector('input[name="s2-carga_divergente"]:checked')?.value || '',
+            tem_sobra: document.querySelector('input[name="s2-tem_sobra"]:checked')?.value || '',
+            sobras: getSobraInputValues('sobra-container'),
+            divergencia_dev_total: getDivergenciaInputValues('divergencia-tipo-dev_total'),
+            divergencia_dev_parcial: getDivergenciaInputValues('divergencia-tipo-dev_parcial'),
+            divergencia_falta: getDivergenciaInputValues('divergencia-tipo-falta'),
+            divergencia_retira_oc: getDivergenciaInputValues('divergencia-tipo-retira_oc'),
         }
+    };
 
-        let finalStatus = 'Concluído';
-        if (tratativa1_status === 'Em tratamento' || tratativa2_status === 'Em tratamento') {
-            finalStatus = 'Em Tratamento';
-        }
-
-        const dataToUpdate = {
-            status: finalStatus,
-            finalizadoPor: currentUser.name,
-            secao3: {
-                motorista: document.getElementById('s3-motorista').value,
-                ajudante1: document.getElementById('s3-ajudante1').value,
-                ajudante2: document.getElementById('s3-ajudante2').value,
-                tratativa1_status: tratativa1_status,
-                tratativa1_obs: document.getElementById('tratativa1_obs').value,
-                tratativa2_status: tratativa2_status,
-                tratativa2_obs: document.getElementById('tratativa2_obs').value,
-                obs_arrumacao: document.getElementById('s3-obs_arrumacao').value,
-                obs_fusion: document.getElementById('s3-obs_fusion').value,
-                obs_ocorrencias: document.getElementById('s3-obs_ocorrencias').value,
-                obs_devolucao: document.getElementById('s3-obs_devolucao').value,
-                obs_feedback: document.getElementById('s3-obs_feedback').value,
-                obs_gerais: document.getElementById('s3-obs_gerais').value,
-                responsavel: document.getElementById('s3-responsavel').value
-            }
-        };
-        checklistsCollection.doc(currentEditingId).set(dataToUpdate, { merge: true })
-            .then(() => {
-                showToast('Checklist finalizado com sucesso!');
-                navigateTo('view-dashboard', 'retorno');
-                fetchChecklistsPage(currentPage); 
-            })
-            .catch(error => {
-                console.error("Erro ao finalizar: ", error);
-                showToast('Erro ao concluir checklist.', 'error');
-            });
+    // Adiciona a arrumação do baú aos dados que serão salvos
+    const arrumacaoBau = document.querySelector('input[name="s3-obs_arrumacao"]:checked')?.value || '';
+    if (arrumacaoBau) {
+        dataToUpdate['secao3.obs_arrumacao'] = arrumacaoBau;
     }
+
+    checklistsCollection.doc(currentEditingId).set(dataToUpdate, { merge: true })
+        .then(() => {
+            showToast('Etapa 2 salva com sucesso!');
+            navigateTo('view-dashboard', 'retorno');
+            fetchChecklistsPage(currentPage); 
+        })
+        .catch(error => {
+            console.error("Erro ao atualizar: ", error)
+            showToast('Erro ao salvar etapa 2.', 'error');
+        });
+}
+
+function salvarEtapa3() {
+    if (!currentEditingId) return;
+    if(!document.getElementById('s3-responsavel').value) { showToast('Responsável é obrigatório.', 'error'); return; }
+
+    const tratativa1_status = document.querySelector('input[name="tratativa1_status"]:checked')?.value;
+    const tratativa2_status = document.querySelector('input[name="tratativa2_status"]:checked')?.value;
+
+    if (!tratativa1_status || !tratativa2_status) {
+        showToast('Por favor, marque o status para todas as tratativas.', 'error');
+        return;
+    }
+
+    let finalStatus = 'Concluído';
+    if (tratativa1_status === 'Em tratamento' || tratativa2_status === 'Em tratamento') {
+        finalStatus = 'Em Tratamento';
+    }
+
+    const dataToUpdate = {
+        status: finalStatus,
+        finalizadoPor: currentUser.name,
+        secao3: {
+            motorista: document.getElementById('s3-motorista').value,
+            ajudante1: document.getElementById('s3-ajudante1').value,
+            ajudante2: document.getElementById('s3-ajudante2').value,
+            tratativa1_status: tratativa1_status,
+            tratativa1_obs: document.getElementById('tratativa1_obs').value,
+            tratativa2_status: tratativa2_status,
+            tratativa2_obs: document.getElementById('tratativa2_obs').value,
+            // A linha 'obs_arrumacao' foi removida daqui
+            obs_fusion: document.querySelector('input[name="s3-obs_fusion"]:checked')?.value || '',
+            obs_ocorrencias: document.querySelector('input[name="s3-obs_ocorrencias"]:checked')?.value || '',
+            obs_devolucao: document.querySelector('input[name="s3-obs_devolucao"]:checked')?.value || '',
+            obs_feedback: document.querySelector('input[name="s3-obs_feedback"]:checked')?.value || '',
+            obs_gerais: document.getElementById('s3-obs_gerais').value,
+            responsavel: document.getElementById('s3-responsavel').value
+        }
+    };
+    checklistsCollection.doc(currentEditingId).set(dataToUpdate, { merge: true })
+        .then(() => {
+            showToast('Checklist finalizado com sucesso!');
+            navigateTo('view-dashboard', 'retorno');
+            fetchChecklistsPage(currentPage); 
+        })
+        .catch(error => {
+            console.error("Erro ao finalizar: ", error);
+            showToast('Erro ao concluir checklist.', 'error');
+        });
+}
     
     // --- LÓGICA DE EXIBIÇÃO E EXCLUSÃO (MASTER) ---
 function abrirModal(id) {
@@ -1357,13 +1410,8 @@ function abrirModal(id) {
             <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col modal-content">
                 <div class="p-4 border-b flex justify-between items-center"><h3 class="text-lg font-bold text-gray-800">Detalhes do Checklist - Carga ${secao1.carga}</h3><button onclick="fecharModal()" class="text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button></div>
                 <div class="p-6 overflow-y-auto space-y-4 text-sm">
-                    <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 1: Documentos</span><span class="font-normal text-xs text-gray-500">Criado por: ${item.criadoPor || 'N/A'}</span></h4><p><strong>Data:</strong> ${dataFormatada}</p><p><strong>Veículo:</strong> ${secao1.veiculo || 'N/A'}</p><div class="mt-2 pt-2 border-t"><h5 class="font-semibold mb-1">Notas não Conforme:</h5><p><strong>Falta N.F:</strong> ${(secao1.falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Falta Assinatura:</strong> ${(secao1.falta_assinatura || []).join(', ') || 'Nenhuma'}</p><p><strong>Foto Canhoto:</strong> ${(secao1.foto_canhoto || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Falta N.F:</strong> ${(secao1.dev_falta_nf || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Total:</strong> ${(secao1.dev_total || []).join(', ') || 'Nenhuma'}</p><p><strong>Dev. Parcial:</strong> ${(secao1.dev_parcial || []).join(', ') || 'Nenhuma'}</p><p><strong>Retira O.C:</strong> ${(secao1.retira_oc || []).join(', ') || 'Nenhuma'}</p></div><div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-3 gap-2"><div><strong>Cartão Comb.:</strong> ${secao1.cartao_combustivel || 'N/A'}</div><div><strong>Celular:</strong> ${secao1.celular || 'N/A'}</div><div><strong>Carregador:</strong> ${secao1.carregador || 'N/A'}</div></div>
-                        
-                        <div class="mt-2 pt-2 border-t">
-                            <p><strong>Problema de Comportamento:</strong> ${secao1.comportamento || 'N/A'}</p>
-                            ${secao1.comportamento === 'Sim' ? `<p class="pl-2"><strong>Obs:</strong> ${secao1.comportamento_obs || 'Nenhuma'}</p>` : ''}
-                        </div>
-                        </div>
+                    <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 1: Documentos</span><span class="font-normal text-xs text-gray-500">Criado por: ${item.criadoPor || 'N/A'}</span></h4><p><strong>Data:</strong> ${dataFormatada}</p><p><strong>Veículo:</strong> ${secao1.veiculo || 'N/A'}</p><div class="mt-2 pt-2 border-t"><h5 class="font-semibold mb-1">Notas não Conforme:</h5><p><strong>Falta N.F:</strong> ${(secao1.falta_nf || []).join(', ') || 'Não'}</p><p><strong>Falta Assinatura:</strong> ${(secao1.falta_assinatura || []).join(', ') || 'Não'}</p><p><strong>Foto Canhoto:</strong> ${(secao1.foto_canhoto || []).join(', ') || 'Não'}</p><p><strong>Dev. Falta N.F:</strong> ${(secao1.dev_falta_nf || []).join(', ') || 'Não'}</p><p><strong>Dev. Total:</strong> ${(secao1.dev_total || []).join(', ') || 'Não'}</p><p><strong>Dev. Parcial:</strong> ${(secao1.dev_parcial || []).join(', ') || 'Não'}</p><p><strong>Retira O.C:</strong> ${(secao1.retira_oc || []).join(', ') || 'Não'}</p></div><div class="mt-2 pt-2 border-t grid grid-cols-2 sm:grid-cols-3 gap-2"><div><strong>Cartão Comb.:</strong> ${secao1.cartao_combustivel || 'N/A'}</div><div><strong>Celular:</strong> ${secao1.celular || 'N/A'}</div><div><strong>Carregador:</strong> ${secao1.carregador || 'N/A'}</div></div></div>
+                    <div class="p-3 bg-gray-100 rounded-lg"><h4 class="font-bold mb-2 text-base flex justify-between items-center"><span>Seção 2: Ativos / Produtos</span><span class="font-normal text-xs text-gray-500">Conferido por: ${item.conferidoPor || 'Pendente'}</span></h4><div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><div><strong>Caçamba:</strong> ${secao2.cacamba !== undefined ? secao2.cacamba : 'Pendente'}</div><div><strong>Gaiola:</strong> ${secao2.gaiola !== undefined ? secao2.gaiola : 'Pendente'}</div><div><strong>Palete:</strong> ${secao2.palete !== undefined ? secao2.palete : 'Pendente'}</div><div><strong>Chapatex:</strong> ${secao2.chapatex !== undefined ? secao2.chapatex : 'Pendente'}</div></div><div class="mt-2 pt-2 border-t"><p><strong>Produtos Conferidos:</strong> ${secao2.produtos_conferidos || 'Pendente'}</p><p><strong>Carga Divergente:</strong> ${secao2.carga_divergente || 'Pendente'}</p><div class="mt-1 pl-4">${divergenciasHTML}</div><p class="mt-2"><strong>Tem Sobra:</strong> ${secao2.tem_sobra || 'Pendente'}</p><div class="mt-1 pl-4">${sobrasHTML}</div></div>
                     ${frotaSummaryHTML} ${secao3HTML}
                 </div>
                 <div class="p-4 bg-gray-50 border-t text-right"><button onclick="fecharModal()" class="bg-gray-500 text-white px-4 py-2 rounded-lg font-semibold text-sm hover:bg-gray-600 transition">Fechar</button></div>
@@ -1516,24 +1564,6 @@ async function excluirChecklist(id, type) {
                         </div>
                      </fieldset>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 border-t pt-4"><div><label class="text-sm font-medium text-gray-700">Cartão de Combustível</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Sim" ${radioChecked(s1.cartao_combustivel, 'Sim')} class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Não" ${radioChecked(s1.cartao_combustivel, 'Não')} class="mr-2 h-4 w-4"> Não</label><label class="flex items-center"><input type="radio" name="s1-cartao_combustivel" value="Agregado" ${radioChecked(s1.cartao_combustivel, 'Agregado')} class="mr-2 h-4 w-4"> Agregado</label></div></div><div class="grid grid-cols-2 gap-4"><div><label class="text-sm font-medium text-gray-700">Celular</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-celular" value="Sim" ${radioChecked(s1.celular, 'Sim')} class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-celular" value="Não" ${radioChecked(s1.celular, 'Não')} class="mr-2 h-4 w-4"> Não</label><label class="flex items-center"><input type="radio" name="s1-celular" value="Agregado" ${radioChecked(s1.celular, 'Agregado')} class="mr-2 h-4 w-4"> Agregado</label></div></div><div><label class="text-sm font-medium text-gray-700">Carregador</label><div class="flex flex-wrap gap-x-4 gap-y-2 mt-2"><label class="flex items-center"><input type="radio" name="s1-carregador" value="Sim" ${radioChecked(s1.carregador, 'Sim')} class="mr-2 h-4 w-4"> Sim</label><label class="flex items-center"><input type="radio" name="s1-carregador" value="Não" ${radioChecked(s1.carregador, 'Não')} class="mr-2 h-4 w-4"> Não</label></div></div></div></div>
-
-                        <div class="grid grid-cols-1 gap-4 border-t pt-4">
-                            <div>
-                                <label class="text-sm font-medium text-gray-700">Houve desvio comportamental da equipe durante a rota?</label>
-                                <div class="flex space-x-6 mt-2">
-                                    <label class="flex items-center">
-                                        <input type="radio" name="s1-comportamento" value="Sim" class="mr-2 h-4 w-4" onchange="toggleComportamentoObs(true)" ${radioChecked(s1.comportamento, 'Sim')}> Sim
-                                    </label>
-                                    <label class="flex items-center">
-                                        <input type="radio" name="s1-comportamento" value="Não" class="mr-2 h-4 w-4" onchange="toggleComportamentoObs(false)" ${radioChecked(s1.comportamento, 'Não') || 'checked'}> Não
-                                    </label>
-                                </div>
-                            </div>
-                            <div id="comportamento-obs-details" style="display: ${s1.comportamento === 'Sim' ? 'block' : 'none'}">
-                                <label for="s1-comportamento_obs" class="text-sm font-medium text-gray-700">Observação sobre o comportamento:</label>
-                                <textarea id="s1-comportamento_obs" placeholder="Descreva o que aconteceu..." rows="3" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3">${s1.comportamento_obs || ''}</textarea>
-                            </div>
-                        </div>
                 </fieldset>
 
                 <!-- SEÇÃO 2 -->
@@ -1598,15 +1628,14 @@ async function excluirChecklist(id, type) {
     function salvarEdicao(id) {
         if (!id) return;
 
-const cartaoCombustivel = document.querySelector('input[name="s1-cartao_combustivel"]:checked');
- const celular = document.querySelector('input[name="s1-celular"]:checked');
-  const carregador = document.querySelector('input[name="s1-carregador"]:checked');
-        const comportamento = document.querySelector('input[name="s1-comportamento"]:checked'); 
+        const cartaoCombustivel = document.querySelector('input[name="s1-cartao_combustivel"]:checked');
+        const celular = document.querySelector('input[name="s1-celular"]:checked');
+        const carregador = document.querySelector('input[name="s1-carregador"]:checked');
 
- if (!cartaoCombustivel || !celular || !carregador || !comportamento) { 
-  showToast('Por favor, marque todas as opções (Cartão, Celular, Carregador, Comportamento).', 'error'); 
-  return;
-  }
+        if (!cartaoCombustivel || !celular || !carregador) {
+            showToast('Por favor, marque todas as opções (Cartão, Celular, Carregador).', 'error');
+            return;
+        }
 
         const dataToUpdate = {
             lastEditedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1809,8 +1838,6 @@ function updateStats(data) {
                 'Dev. Total': (secao1.dev_total || []).join(', '), 'Dev. Parcial': (secao1.dev_parcial || []).join(', '),
                 'Retira O.C': (secao1.retira_oc || []).join(', '),
                 'Cartão Combustível': secao1.cartao_combustivel, 'Celular': secao1.celular, 'Carregador': secao1.carregador,
-                'Problema Comportamento': secao1.comportamento,
-                'Obs Comportamento': secao1.comportamento_obs,
                 'Qtd Caçamba': secao2.cacamba, 'Qtd Gaiola': secao2.gaiola, 'Qtd Palete': secao2.palete, 'Qtd Chapatex': secao2.chapatex,
                 'Produtos Conferidos?': secao2.produtos_conferidos, 'Carga Divergente?': secao2.carga_divergente,
                 'Tem Sobra?': secao2.tem_sobra, 
