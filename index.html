@@ -433,9 +433,7 @@
         document.getElementById('current-user-role').textContent = currentUser.role;
         
         updatePermissions();
-        listenForStats(); 
         carregarChecklistsPorData();
-        listenForStatsFrota();
         carregarFrotaPorData();
 
         if (currentUser.role === 'Frota') {
@@ -465,21 +463,6 @@
 
     function logout() { auth.signOut(); }
 
-    function listenForStats() {
-        if (statsUnsubscribe) statsUnsubscribe();
-        statsUnsubscribe = checklistsCollection.onSnapshot(snapshot => {
-            allChecklists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            updateStats(allChecklists);
-        }, error => console.error("Erro ao buscar checklists para estatísticas: ", error));
-    }
-
-    function listenForStatsFrota() {
-        if (statsUnsubscribeFrota) statsUnsubscribeFrota();
-        statsUnsubscribeFrota = checklistsFrotaCollection.onSnapshot(snapshot => {
-            allChecklistsFrota = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            updateStatsFrota(allChecklistsFrota);
-        }, error => console.error("Erro ao buscar checklists de frota para estatísticas: ", error));
-    }
     </script>
 
     <script>
