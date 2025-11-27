@@ -1215,7 +1215,7 @@ function salvarEtapa1() {
         .then(() => {
             showToast('Checklist criado com sucesso!');
             navigateTo('view-dashboard', 'retorno');
-            fetchChecklistsPage(1, true); 
+            carregarChecklistsPorData();
         })
         .catch(error => {
             console.error("Erro ao adicionar: ", error);
@@ -1255,7 +1255,7 @@ function salvarEtapa2() {
         .then(() => {
             showToast('Etapa 2 salva com sucesso!');
             navigateTo('view-dashboard', 'retorno');
-            fetchChecklistsPage(currentPage); 
+           carregarChecklistsPorData();
         })
         .catch(error => {
             console.error("Erro ao atualizar: ", error)
@@ -1304,7 +1304,7 @@ function salvarEtapa3() {
         .then(() => {
             showToast('Checklist finalizado com sucesso!');
             navigateTo('view-dashboard', 'retorno');
-            fetchChecklistsPage(currentPage); 
+            carregarChecklistsPorData();
         })
         .catch(error => {
             console.error("Erro ao finalizar: ", error);
@@ -1508,10 +1508,10 @@ async function excluirChecklist(id, type) {
         
         // 4. Só então, busca a lista de checklists atualizada
         if (type === 'retorno') {
-            await fetchChecklistsPage(1, true); 
-        } else {
-            await fetchChecklistsPageFrota(1, true);
-        }
+    await carregarChecklistsPorData(); 
+} else {
+    await carregarFrotaPorData();
+}
     } catch (error) {
         // Se qualquer passo acima falhar, executa o bloco de erro
         console.error("Erro ao excluir checklist: ", error);
@@ -1745,7 +1745,7 @@ async function excluirChecklist(id, type) {
             .then(() => {
                 showToast('Checklist atualizado com sucesso!');
                 navigateTo('view-dashboard', 'retorno');
-                fetchChecklistsPage(currentPage); // Recarrega a página atual para refletir a mudança
+                carregarChecklistsPorData(); // Recarrega a página atual para refletir a mudança
             })
             .catch(error => {
                 console.error("Erro ao salvar alterações: ", error);
@@ -1766,15 +1766,14 @@ function updateStats(data) {
     document.getElementById('stats-concluido').textContent = data.filter(c => c.status === 'Concluído').length;
 }
 
- async function carregarChecklistsPorData() {
+async function carregarChecklistsPorData() {
     const tabelaBody = document.getElementById('tabela-checklists');
     tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Buscando no Firebase...</div></td></tr>`;
 
-    // 1. Pegar datas dos inputs ou definir "Hoje" como padrão
     let inicio = document.getElementById('filtro-data-inicio').value;
     let fim = document.getElementById('filtro-data-fim').value;
 
-    // Se não tiver data, define HOJE como padrão nos inputs e na busca
+    // Se não tiver data, define HOJE
     if (!inicio || !fim) {
         const hoje = new Date().toISOString().split('T')[0];
         document.getElementById('filtro-data-inicio').value = hoje;
@@ -1783,45 +1782,46 @@ function updateStats(data) {
         fim = hoje;
     }
 
-    // 2. Criar as datas no formato Timestamp do Firebase
-    // Data Inicio: 00:00:00
     const dataInicioObj = new Date(inicio + 'T00:00:00');
-    // Data Fim: 23:59:59
     const dataFimObj = new Date(fim + 'T23:59:59.999');
 
     try {
-        // 3. Montar a Query (A MÁGICA ACONTECE AQUI)
-        // Estamos dizendo: "Firebase, me dê apenas documentos onde createdAt está entre essas datas"
+        // 1. Busca no Firebase por DATA (Isso economiza leituras)
         let query = checklistsCollection
             .where('createdAt', '>=', firebase.firestore.Timestamp.fromDate(dataInicioObj))
             .where('createdAt', '<=', firebase.firestore.Timestamp.fromDate(dataFimObj))
-            .orderBy('createdAt', 'desc'); // Ordena do mais novo para o mais velho
+            .orderBy('createdAt', 'desc');
 
-        // 4. Executar a busca
         const snapshot = await query.get();
-        
-        // Atualiza a variável global com APENAS os dados baixados
         allChecklists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        // 5. Renderizar
-        renderizarTabela(allChecklists);
-        updateStats(allChecklists); // Atualiza os cards apenas com os dados do dia/período
+        // =========================================================
+        // 2. FILTRO LOCAL (Busca de Texto e Status na memória)
+        // =========================================================
+        const termoBusca = document.getElementById('filtro-busca').value.toLowerCase();
+        const statusFiltro = document.getElementById('filtro-status').value;
 
-        // Ocultar paginação antiga (pois agora trouxemos tudo daquela data)
-        // Se quiser paginação com filtro de data, a lógica é mais complexa, 
-        // mas para dia a dia, trazer tudo do dia é leve.
+        const dadosFiltrados = allChecklists.filter(item => {
+            // Verifica Texto (Veículo ou Carga)
+            const veiculo = (item.secao1 && item.secao1.veiculo) ? item.secao1.veiculo.toLowerCase() : '';
+            const carga = (item.secao1 && item.secao1.carga) ? item.secao1.carga.toLowerCase() : '';
+            const matchTexto = !termoBusca || veiculo.includes(termoBusca) || carga.includes(termoBusca);
+
+            // Verifica Status
+            const matchStatus = !statusFiltro || item.status === statusFiltro;
+
+            return matchTexto && matchStatus;
+        });
+
+        // 3. Renderiza a tabela e cards com os dados já filtrados
+        renderizarTabela(dadosFiltrados);
+        updateStats(dadosFiltrados); 
+        
         document.getElementById('pagination-controls').style.display = 'none';
 
     } catch (error) {
         console.error("Erro ao buscar:", error);
-        
-        // DICA DE OURO: Se der erro de índice, mostra o link no console
-        if (error.message.includes('requires an index')) {
-            console.log("⚠️ CLIQUE NO LINK ACIMA NO CONSOLE PARA CRIAR O ÍNDICE NO FIREBASE ⚠️");
-            tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500">Erro de Índice (Abra o Console F12 e clique no link do Firebase)</td></tr>`;
-        } else {
-            tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500">Erro ao buscar dados.</td></tr>`;
-        }
+        tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500">Erro ao carregar dados.</td></tr>`;
     }
 }
     
@@ -1835,24 +1835,10 @@ function updateStats(data) {
         pageInfo.textContent = `Página ${currentPage}`;
     }
     
-    function nextPage() {
-        if(lastFetchedPageSize >= ITEMS_PER_PAGE){
-             fetchChecklistsPage(currentPage + 1);
-        }
-    }
-
-    function prevPage() {
-        if (currentPage > 1) {
-            fetchChecklistsPage(currentPage - 1);
-        }
-    }
-    
-    document.getElementById('prev-page-btn').addEventListener('click', prevPage);
-    document.getElementById('next-page-btn').addEventListener('click', nextPage);
-    document.getElementById('filtro-busca').addEventListener('input', () => fetchChecklistsPage(1, true));
-    document.getElementById('filtro-status').addEventListener('change',() => fetchChecklistsPage(1, true));
-    document.getElementById('filtro-data-inicio').addEventListener('change',() => fetchChecklistsPage(1, true));
-    document.getElementById('filtro-data-fim').addEventListener('change',() => fetchChecklistsPage(1, true));
+document.getElementById('filtro-busca').addEventListener('change', () => carregarChecklistsPorData()); 
+document.getElementById('filtro-status').addEventListener('change', () => carregarChecklistsPorData());
+document.getElementById('filtro-data-inicio').addEventListener('change', () => carregarChecklistsPorData());
+document.getElementById('filtro-data-fim').addEventListener('change', () => carregarChecklistsPorData());
 
 
     function exportarExcel() {
@@ -2119,7 +2105,7 @@ async function carregarFrotaPorData() {
             .then(() => {
                 showToast('Checklist de frota salvo com sucesso!');
                 navigateTo('view-dashboard-frota', 'frota');
-                fetchChecklistsPageFrota(1, true);
+                carregarFrotaPorData();
             })
             .catch(error => {
                 console.error("Erro ao salvar checklist de frota: ", error);
@@ -2234,7 +2220,7 @@ async function carregarFrotaPorData() {
             .then(() => {
                 showToast('Checklist de frota atualizado com sucesso!');
                 navigateTo('view-dashboard-frota', 'frota');
-                fetchChecklistsPageFrota(1, true); 
+                carregarFrotaPorData();
             })
             .catch(error => {
                 console.error("Erro ao atualizar checklist de frota: ", error);
