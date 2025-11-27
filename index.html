@@ -139,7 +139,7 @@
         <span class="hidden sm:inline">Exportar Excel</span>
     </button>
 
-    <button onclick="fetchChecklistsPage(1, true)" title="Atualizar Dados" class="bg-gray-200 text-gray-700 p-2 rounded-lg font-semibold text-sm hover:bg-gray-300 transition shadow flex items-center justify-center">
+    <button onclick="carregarChecklistsPorData()" title="Atualizar Dados" class="bg-gray-200 text-gray-700 p-2 rounded-lg font-semibold text-sm hover:bg-gray-300 transition shadow flex items-center justify-center">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 4l5 5M20 20l-5-5" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5m11 11v-5h-5M4.5 9.5a9 9 0 0115 0m-15 5a9 9 0 0015 0" />
@@ -151,8 +151,8 @@
 </div>
 </div>
                                  <div class="flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-2 mb-4">
-                                    <input type="date" id="filtro-data-inicio" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Início">
-                                    <input type="date" id="filtro-data-fim" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Fim">
+                                    <input type="date" id="filtro-data-inicio" onchange="carregarChecklistsPorData()" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Início">
+                                    <input type="date" id="filtro-data-fim" onchange="carregarChecklistsPorData()" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Fim">
                                     <input type="text" id="filtro-busca" placeholder="Buscar por Veículo ou Carga..." class="w-full md:w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                     <select id="filtro-status" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                         <option value="">Todos os Status</option>
@@ -220,7 +220,7 @@
         <span class="hidden sm:inline">Exportar Excel</span>
     </button>
 
-    <button onclick="fetchChecklistsPageFrota(1, true)" title="Atualizar Dados" class="bg-gray-200 text-gray-700 p-2 rounded-lg font-semibold text-sm hover:bg-gray-300 transition shadow flex items-center justify-center">
+    <button onclick="carregarFrotaPorData()" title="Atualizar Dados" class="bg-gray-200 text-gray-700 p-2 rounded-lg font-semibold text-sm hover:bg-gray-300 transition shadow flex items-center justify-center">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5M20 20v-5h-5M4 4l5 5M20 20l-5-5" />
             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h5m11 11v-5h-5M4.5 9.5a9 9 0 0115 0m-15 5a9 9 0 0015 0" />
@@ -232,8 +232,8 @@
 </div>
 </div>
                                 <div class="flex flex-col md:flex-row justify-end space-y-2 md:space-y-0 md:space-x-2 mb-4">
-                                     <input type="date" id="filtro-data-inicio-frota" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Início">
-                                     <input type="date" id="filtro-data-fim-frota" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Fim">
+                                     <input type="date" id="filtro-data-inicio-frota" onchange="carregarFrotaPorData()" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Início">
+                                     <input type="date" id="filtro-data-fim-frota" onchange="carregarFrotaPorData()" class="w-full md:w-auto border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500" title="Data Fim">
                                     <input type="text" id="filtro-busca-frota" placeholder="Buscar por Placa ou Carga..." class="w-full md:w-1/3 border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500">
                                 </div>
                                 <div class="flex-1 overflow-x-auto">
@@ -434,9 +434,9 @@
         
         updatePermissions();
         listenForStats(); 
-        fetchChecklistsPage(1, true); 
+        carregarChecklistsPorData();
         listenForStatsFrota();
-        fetchChecklistsPageFrota(1, true);
+        carregarFrotaPorData();
 
         if (currentUser.role === 'Frota') {
             showAppSection('frota');
@@ -1783,80 +1783,62 @@ function updateStats(data) {
     document.getElementById('stats-concluido').textContent = data.filter(c => c.status === 'Concluído').length;
 }
 
- async function fetchChecklistsPage(page = 1, reset = false) {
-    if (reset) {
-        page = 1;
-        pageStartCursors = [null];
-    }
-    currentPage = page;
-
+ async function carregarChecklistsPorData() {
     const tabelaBody = document.getElementById('tabela-checklists');
-    tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Carregando dados...</div></td></tr>`;
-    
+    tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Buscando no Firebase...</div></td></tr>`;
+
+    // 1. Pegar datas dos inputs ou definir "Hoje" como padrão
+    let inicio = document.getElementById('filtro-data-inicio').value;
+    let fim = document.getElementById('filtro-data-fim').value;
+
+    // Se não tiver data, define HOJE como padrão nos inputs e na busca
+    if (!inicio || !fim) {
+        const hoje = new Date().toISOString().split('T')[0];
+        document.getElementById('filtro-data-inicio').value = hoje;
+        document.getElementById('filtro-data-fim').value = hoje;
+        inicio = hoje;
+        fim = hoje;
+    }
+
+    // 2. Criar as datas no formato Timestamp do Firebase
+    // Data Inicio: 00:00:00
+    const dataInicioObj = new Date(inicio + 'T00:00:00');
+    // Data Fim: 23:59:59
+    const dataFimObj = new Date(fim + 'T23:59:59.999');
+
     try {
-        const busca = document.getElementById('filtro-busca').value.toLowerCase();
-        const status = document.getElementById('filtro-status').value;
-        const dataInicio = document.getElementById('filtro-data-inicio').value;
-        const dataFim = document.getElementById('filtro-data-fim').value;
+        // 3. Montar a Query (A MÁGICA ACONTECE AQUI)
+        // Estamos dizendo: "Firebase, me dê apenas documentos onde createdAt está entre essas datas"
+        let query = checklistsCollection
+            .where('createdAt', '>=', firebase.firestore.Timestamp.fromDate(dataInicioObj))
+            .where('createdAt', '<=', firebase.firestore.Timestamp.fromDate(dataFimObj))
+            .orderBy('createdAt', 'desc'); // Ordena do mais novo para o mais velho
 
-        // Se qualquer filtro estiver ativo, aplicamos a lógica de filtragem local
-        if (busca || status || dataInicio || dataFim) {
-            const filteredData = allChecklists.filter(item => {
-                const matchBusca = !busca || 
-                    (item.secao1 && item.secao1.carga && item.secao1.carga.toLowerCase().includes(busca)) ||
-                    (item.secao1 && item.secao1.veiculo && item.secao1.veiculo.toLowerCase().includes(busca));
-                
-                const matchStatus = !status || item.status === status;
-                
-                let matchData = true;
-                if ((dataInicio || dataFim) && item.createdAt && item.createdAt.toDate) {
-                    const itemDate = item.createdAt.toDate();
-                    
-                    if (dataInicio && itemDate < new Date(dataInicio + 'T00:00:00Z')) {
-                        matchData = false;
-                    }
-                    if (dataFim && itemDate > new Date(dataFim + 'T23:59:59Z')) {
-                        matchData = false;
-                    }
-                } else if ((dataInicio || dataFim) && !item.createdAt) {
-                    matchData = false;
-                }
-                return matchBusca && matchStatus && matchData;
-            });
-            
-            updateStats(filteredData); // ATUALIZA OS CARDS COM OS DADOS FILTRADOS
-            renderizarTabela(filteredData);
-            document.getElementById('pagination-controls').style.display = 'none';
-            return;
-        }
-        
-        // Se não houver filtros, reseta os cards para os valores totais e busca com paginação
-        updateStats(allChecklists);
-        document.getElementById('pagination-controls').style.display = 'flex';
-        
-        let query = checklistsCollection.orderBy("createdAt", "desc");
-        const cursor = pageStartCursors[currentPage - 1];
-        if (cursor) {
-            query = query.startAfter(cursor);
-        }
-
-        query = query.limit(ITEMS_PER_PAGE);
-        
+        // 4. Executar a busca
         const snapshot = await query.get();
-        const pageData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        lastFetchedPageSize = snapshot.size;
-
-        if (!snapshot.empty) {
-            const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-            pageStartCursors[currentPage] = lastDoc;
-        }
         
-        renderizarTabela(pageData);
-        updatePaginationButtons();
+        // Atualiza a variável global com APENAS os dados baixados
+        allChecklists = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // 5. Renderizar
+        renderizarTabela(allChecklists);
+        updateStats(allChecklists); // Atualiza os cards apenas com os dados do dia/período
+
+        // Ocultar paginação antiga (pois agora trouxemos tudo daquela data)
+        // Se quiser paginação com filtro de data, a lógica é mais complexa, 
+        // mas para dia a dia, trazer tudo do dia é leve.
+        document.getElementById('pagination-controls').style.display = 'none';
 
     } catch (error) {
-        console.error("Erro ao buscar checklists: ", error);
-        tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500">Erro ao carregar os dados.</td></tr>`;
+        console.error("Erro ao buscar:", error);
+        
+        // DICA DE OURO: Se der erro de índice, mostra o link no console
+        if (error.message.includes('requires an index')) {
+            console.log("⚠️ CLIQUE NO LINK ACIMA NO CONSOLE PARA CRIAR O ÍNDICE NO FIREBASE ⚠️");
+            tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500">Erro de Índice (Abra o Console F12 e clique no link do Firebase)</td></tr>`;
+        } else {
+            tabelaBody.innerHTML = `<tr><td colspan="5" class="text-center py-10 text-red-500">Erro ao buscar dados.</td></tr>`;
+        }
     }
 }
     
@@ -1990,62 +1972,52 @@ function updateStatsFrota(data) {
     document.getElementById('stats-nao-conforme-frota').textContent = data.filter(c => c.status === 'Não Conforme').length;
 }
 
-async function fetchChecklistsPageFrota(page = 1, reset = false) {
-    if (reset) {
-        page = 1;
-        pageStartCursorsFrota = [null];
-    }
-    currentPageFrota = page;
-
+async function carregarFrotaPorData() {
     const tabelaBody = document.getElementById('tabela-checklists-frota');
-    tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Carregando dados...</div></td></tr>`;
-    
+    tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10"><div class="flex justify-center items-center text-gray-500"><div class="spinner mr-2"></div> Buscando Frota no Firebase...</div></td></tr>`;
+
+    let inicio = document.getElementById('filtro-data-inicio-frota').value;
+    let fim = document.getElementById('filtro-data-fim-frota').value;
+
+    // Se vazio, define HOJE
+    if (!inicio || !fim) {
+        const hoje = new Date().toISOString().split('T')[0];
+        document.getElementById('filtro-data-inicio-frota').value = hoje;
+        document.getElementById('filtro-data-fim-frota').value = hoje;
+        inicio = hoje;
+        fim = hoje;
+    }
+
+    // Ajuste de fuso/hora para pegar o dia todo
+    const dataInicioObj = new Date(inicio + 'T00:00:00');
+    const dataFimObj = new Date(fim + 'T23:59:59.999');
+
     try {
-        const buscaFrota = document.getElementById('filtro-busca-frota').value.toLowerCase();
-        const dataInicioFrota = document.getElementById('filtro-data-inicio-frota').value;
-        const dataFimFrota = document.getElementById('filtro-data-fim-frota').value;
+        // Query otimizada na coleção de FROTA
+        // Nota: O campo de data na frota parece ser string 'YYYY-MM-DD' ou Timestamp? 
+        // No seu código antigo vi "orderBy('createdAt')". Se for Timestamp, use assim:
+        let query = checklistsFrotaCollection
+            .where('createdAt', '>=', firebase.firestore.Timestamp.fromDate(dataInicioObj))
+            .where('createdAt', '<=', firebase.firestore.Timestamp.fromDate(dataFimObj))
+            .orderBy('createdAt', 'desc');
 
-        if (buscaFrota || dataInicioFrota || dataFimFrota) {
-            const filteredData = allChecklistsFrota.filter(item => {
-                const matchBusca = !buscaFrota || 
-                    (item.placa && item.placa.toLowerCase().includes(buscaFrota)) ||
-                    (item.carga && item.carga.toLowerCase().includes(buscaFrota));
-                const matchData = (!dataInicioFrota || item.data >= dataInicioFrota) && (!dataFimFrota || item.data <= dataFimFrota);
-                return matchBusca && matchData;
-            });
-            
-            updateStatsFrota(filteredData); // ATUALIZA OS CARDS COM OS DADOS FILTRADOS
-            renderizarTabelaFrota(filteredData);
-            document.getElementById('pagination-controls-frota').style.display = 'none';
-            return;
-        }
-
-        // Se não houver filtros, reseta os cards para os valores totais e busca com paginação
-        updateStatsFrota(allChecklistsFrota);
-        document.getElementById('pagination-controls-frota').style.display = 'flex';
-        
-        let query = checklistsFrotaCollection.orderBy("createdAt", "desc");
-        const cursor = pageStartCursorsFrota[currentPageFrota - 1];
-        if (cursor) {
-            query = query.startAfter(cursor);
-        }
-        query = query.limit(ITEMS_PER_PAGE);
-        
         const snapshot = await query.get();
-        const pageData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        lastFetchedPageSizeFrota = snapshot.size;
-
-        if (!snapshot.empty) {
-            const lastDoc = snapshot.docs[snapshot.docs.length - 1];
-            pageStartCursorsFrota[currentPageFrota] = lastDoc;
-        }
         
-        renderizarTabelaFrota(pageData);
-        updatePaginationButtonsFrota();
+        allChecklistsFrota = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        renderizarTabelaFrota(allChecklistsFrota);
+        updateStatsFrota(allChecklistsFrota);
+        
+        document.getElementById('pagination-controls-frota').style.display = 'none';
 
     } catch (error) {
-        console.error("Erro ao buscar checklists de frota: ", error);
-        tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-red-500">Erro ao carregar os dados.</td></tr>`;
+        console.error("Erro ao buscar frota:", error);
+        if (error.message.includes('requires an index')) {
+            console.log("⚠️ CLIQUE NO LINK NO CONSOLE PARA CRIAR O ÍNDICE DA FROTA ⚠️");
+            tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-red-500">Erro de Índice (Ver Console F12)</td></tr>`;
+        } else {
+            tabelaBody.innerHTML = `<tr><td colspan="7" class="text-center py-10 text-red-500">Erro ao buscar dados.</td></tr>`;
+        }
     }
 }
 
