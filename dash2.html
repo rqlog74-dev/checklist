@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rio Quality - Ranking de Equipes</title>
+    <title>Rio Quality - Performance Individual TV</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     
@@ -14,41 +14,55 @@
     <style>
         body { font-family: 'Roboto', sans-serif; background-color: #0f172a; color: #e2e8f0; overflow: hidden; }
         .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .glow-text { text-shadow: 0 0 20px rgba(74, 222, 128, 0.2); }
+        .glow-text-green { text-shadow: 0 0 15px rgba(74, 222, 128, 0.3); }
+        .glow-text-blue { text-shadow: 0 0 15px rgba(96, 165, 250, 0.3); }
         
-        /* Animação Suave */
+        /* Animação de Entrada */
         .fade-in { animation: fadeIn 0.8s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        /* Barra de Progresso */
-        #progress-bar { height: 6px; background: linear-gradient(90deg, #4ade80, #22c55e); width: 0%; position: absolute; bottom: 0; left: 0; transition: width 0.1s linear; }
+        /* Barra de Tempo */
+        #progress-bar { height: 4px; background: linear-gradient(90deg, #22c55e, #3b82f6); width: 0%; position: absolute; bottom: 0; left: 0; transition: width 0.1s linear; }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
-    <header class="p-6 flex justify-between items-center bg-slate-900 border-b border-slate-800 relative">
-        <div class="flex items-center space-x-4">
-            <img src="https://www.rioquality.com.br/images/logo.webp" class="h-20 w-auto opacity-90"> <div>
-                <h1 class="text-4xl font-black tracking-widest text-white uppercase">Ranking de Equipes</h1>
-                <p class="text-green-400 font-bold tracking-wide uppercase mt-1">Performance Mensal</p>
+    <header class="px-8 py-5 flex justify-between items-center bg-slate-900 border-b border-slate-800 relative">
+        <div class="flex items-center space-x-5">
+            <img src="https://www.rioquality.com.br/images/logo.webp" class="h-16 w-auto opacity-90">
+            <div>
+                <h1 class="text-3xl font-black tracking-wide text-white uppercase">Ranking Individual</h1>
+                <p class="text-slate-400 text-sm font-bold tracking-wider uppercase mt-1">Performance Mensal (Eficiência > Volume)</p>
             </div>
         </div>
         <div class="text-right">
-            <p id="relogio" class="text-3xl text-slate-400 font-mono font-bold">00:00</p>
-            <p class="text-slate-600 text-sm mt-1">Atualização em tempo real</p>
+            <p id="relogio" class="text-3xl text-white font-mono font-bold">00:00</p>
+            <p id="paginacao-info" class="text-slate-500 text-sm mt-1">Carregando...</p>
         </div>
         <div id="progress-bar"></div>
     </header>
 
-    <main class="flex-1 p-10 flex flex-col justify-center">
-        <div id="container-dados" class="grid grid-cols-1 gap-5 fade-in">
+    <main class="flex-1 p-6 grid grid-cols-2 gap-8 overflow-hidden">
+        
+        <div class="flex flex-col h-full">
+            <div class="flex items-center justify-between mb-4 px-2">
+                <h2 class="text-2xl font-black text-green-400 glow-text-green flex items-center">
+                    <span class="text-3xl mr-3">🚛</span> TOP MOTORISTAS
+                </h2>
             </div>
-    </main>
+            <div id="lista-motoristas" class="flex-1 space-y-3 fade-in"></div>
+        </div>
 
-    <footer class="p-4 bg-slate-900 border-t border-slate-800 flex justify-between px-10 text-lg font-bold text-slate-500">
-        <div>Critério: <span class="text-slate-300">Maior Eficiência (%)</span> > <span class="text-slate-300">Volume de Viagens</span></div>
-        <div id="info-paginacao">Carregando...</div>
-    </footer>
+        <div class="flex flex-col h-full">
+            <div class="flex items-center justify-between mb-4 px-2">
+                <h2 class="text-2xl font-black text-blue-400 glow-text-blue flex items-center">
+                    <span class="text-3xl mr-3">📦</span> TOP AJUDANTES
+                </h2>
+            </div>
+            <div id="lista-ajudantes" class="flex-1 space-y-3 fade-in"></div>
+        </div>
+
+    </main>
 
     <script>
         // ============================================================
@@ -66,19 +80,19 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const TEMPO_PAGINA = 12000; // 12 segundos por página
-        const TEMPO_UPDATE = 300000; // 5 minutos para buscar novos dados
-        
-        let listaEquipesCompleta = [];
+        // CONFIGURAÇÃO
+        const ITENS_POR_PAGINA = 6; // Quantos nomes aparecem em cada coluna
+        const TEMPO_PAGINA = 15000; // Tempo para trocar de página (15s)
+        const TEMPO_UPDATE = 300000; // Tempo para ir no banco (5min)
+
+        let todosMotoristas = [];
+        let todosAjudantes = [];
         let paginaAtual = 0;
         let startTime = Date.now();
 
         // Relógio
-        setInterval(() => { 
-            const now = new Date();
-            document.getElementById('relogio').innerText = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}); 
-        }, 1000);
-
+        setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }, 1000);
+        
         // Barra de Progresso
         setInterval(() => {
             const elapsed = Date.now() - startTime;
@@ -86,15 +100,14 @@
             document.getElementById('progress-bar').style.width = pct + '%';
         }, 100);
 
-        // Ciclo de Vida
         buscarDados();
         setInterval(buscarDados, TEMPO_UPDATE);
         setInterval(proximaPagina, TEMPO_PAGINA);
 
         async function buscarDados() {
-            const hoje = new Date();
-            const passado = new Date();
-            passado.setDate(hoje.getDate() - 30); // Últimos 30 dias
+    const hoje = new Date();
+    const passado = new Date();
+    passado.setDate(hoje.getDate() - 30); 
 
             try {
                 const snapshot = await db.collection("checklists")
@@ -108,53 +121,55 @@
             }
         }
 
+        function norm(nome) {
+            if(!nome || nome === 'N/A' || nome.trim() === '') return null;
+            return nome.trim().toUpperCase();
+        }
+
         function processarDados(dados) {
-            const equipes = {};
+            const stats = {}; // Chave: Nome, Valor: { cargo, total, perfeitas }
 
             dados.forEach(item => {
-                const mot = item.secao3?.motorista || '';
-                if (!mot || mot === 'N/A' || mot.trim() === '') return;
+                const mot = norm(item.secao3?.motorista);
+                if (!mot) return; // Ignora checklist sem dono
 
-                const aju1 = item.secao3?.ajudante1 || '';
-                const aju2 = item.secao3?.ajudante2 || '';
-                
-                // Chave Única
-                let teamKey = mot.split(' ')[0];
-                if(aju1 && aju1 !== 'N/A') teamKey += '+' + aju1.split(' ')[0];
-                if(aju2 && aju2 !== 'N/A') teamKey += '+' + aju2.split(' ')[0];
+                const aju1 = norm(item.secao3?.ajudante1);
+                const aju2 = norm(item.secao3?.ajudante2);
 
-                // Nome HTML Colorido (Maior para destaque)
-                let htmlNome = `<span class="inline-block text-xs font-bold bg-blue-600 text-white px-3 py-1 rounded mr-3 tracking-wider">MOT</span><span class="text-3xl">${mot.split(' ')[0]}</span>`;
-                
-                if(aju1 && aju1 !== 'N/A') {
-                    htmlNome += ` <span class="text-slate-600 text-xl mx-3">+</span> <span class="inline-block text-xs font-bold bg-purple-600 text-white px-3 py-1 rounded mr-3 tracking-wider">AJU</span><span class="text-3xl">${aju1.split(' ')[0]}</span>`;
-                }
-                if(aju2 && aju2 !== 'N/A') {
-                    htmlNome += ` <span class="text-slate-600 text-xl mx-3">+</span> <span class="inline-block text-xs font-bold bg-purple-600 text-white px-3 py-1 rounded mr-3 tracking-wider">AJU</span><span class="text-3xl">${aju2.split(' ')[0]}</span>`;
-                }
-
-                if(!equipes[teamKey]) equipes[teamKey] = { htmlNome, viagens: 0, perfeitas: 0 };
-                equipes[teamKey].viagens++;
-
-                // Ocorrências
+                // Checa se foi 100%
                 const teveFalta = (item.secao2?.divergencia_falta || []).length > 0;
                 const teveSobra = (item.secao2?.sobras || []).length > 0;
                 const teveComp = item.secao1?.comportamento === 'Sim';
+                const isPerfect = !teveFalta && !teveSobra && !teveComp;
 
-                if(!teveFalta && !teveSobra && !teveComp) {
-                    equipes[teamKey].perfeitas++;
-                }
+                const computar = (nome, cargo) => {
+                    if (!nome) return;
+                    if (!stats[nome]) stats[nome] = { nome, cargo, total: 0, perfeitas: 0 };
+                    stats[nome].total++;
+                    if(isPerfect) stats[nome].perfeitas++;
+                    if(cargo === 'MOT') stats[nome].cargo = 'MOT'; // Prioridade pro cargo Motorista
+                };
+
+                computar(mot, 'MOT');
+                computar(aju1, 'AJU');
+                computar(aju2, 'AJU');
             });
 
-            // Transforma em Lista e Ordena (100% primeiro, depois volume)
-            listaEquipesCompleta = Object.values(equipes)
-                .filter(e => e.viagens >= 2) // Mínimo 3 viagens
-                .sort((a,b) => {
-                    const pctA = (a.perfeitas / a.viagens);
-                    const pctB = (b.perfeitas / b.viagens);
-                    if (Math.abs(pctB - pctA) > 0.001) return pctB - pctA; 
-                    return b.viagens - a.viagens;
-                });
+            // Função de Ordenação (100% primeiro, depois volume)
+            const sortFn = (a, b) => {
+                // 1. Quem tem MAIS viagens ganha
+                if (b.total !== a.total) return b.total - a.total;
+                
+                // 2. Desempate: Quem tem maior % ganha
+                const pctA = a.perfeitas / a.total;
+                const pctB = b.perfeitas / b.total;
+                return pctB - pctA;
+            };
+
+            // Filtra e Ordena (Mínimo 1 viagem para aparecer todo mundo)
+            const listaCompleta = Object.values(stats);
+            todosMotoristas = listaCompleta.filter(p => p.cargo === 'MOT' && p.total >= 1).sort(sortFn);
+            todosAjudantes = listaCompleta.filter(p => p.cargo === 'AJU' && p.total >= 1).sort(sortFn);
 
             paginaAtual = 0;
             startTime = Date.now();
@@ -162,80 +177,81 @@
         }
 
         function proximaPagina() {
-            const itensPorPagina = 5;
-            const totalPaginas = Math.ceil(listaEquipesCompleta.length / itensPorPagina);
-            
+            // Calcula qual é a maior lista para saber quantas páginas tem no total
+            const maiorLista = Math.max(todosMotoristas.length, todosAjudantes.length);
+            const totalPaginas = Math.ceil(maiorLista / ITENS_POR_PAGINA);
+
             paginaAtual++;
-            if (paginaAtual >= totalPaginas) paginaAtual = 0; // Volta pro começo
+            if (paginaAtual >= totalPaginas) paginaAtual = 0;
             
             startTime = Date.now();
             renderizarPagina();
         }
 
         function renderizarPagina() {
-            const container = document.getElementById('container-dados');
-            const infoPag = document.getElementById('info-paginacao');
-            container.innerHTML = '';
+            const containerMot = document.getElementById('lista-motoristas');
+            const containerAju = document.getElementById('lista-ajudantes');
+            const infoPag = document.getElementById('paginacao-info');
+
+            // Limpa e Reinicia Animação
+            containerMot.innerHTML = ''; containerAju.innerHTML = '';
+            containerMot.classList.remove('fade-in'); containerAju.classList.remove('fade-in');
+            void containerMot.offsetWidth; 
+            containerMot.classList.add('fade-in'); containerAju.classList.add('fade-in');
+
+            const inicio = paginaAtual * ITENS_POR_PAGINA;
+            const fim = inicio + ITENS_POR_PAGINA;
+
+            // Fatiar as listas
+            const paginaMot = todosMotoristas.slice(inicio, fim);
+            const paginaAju = todosAjudantes.slice(inicio, fim);
             
-            // Animação
-            container.classList.remove('fade-in');
-            void container.offsetWidth; 
-            container.classList.add('fade-in');
+            // Atualiza Info
+            const totalPaginas = Math.ceil(Math.max(todosMotoristas.length, todosAjudantes.length) / ITENS_POR_PAGINA) || 1;
+            infoPag.innerText = `Página ${paginaAtual + 1}/${totalPaginas}`;
 
-            if (listaEquipesCompleta.length === 0) {
-                container.innerHTML = '<div class="text-center mt-20"><h3 class="text-4xl font-bold text-slate-600">Sem dados suficientes.</h3><p class="text-slate-500 mt-2">Necessário mínimo de 3 viagens no período.</p></div>';
-                return;
-            }
-
-            const itensPorPagina = 5;
-            const inicio = paginaAtual * itensPorPagina;
-            const fim = inicio + itensPorPagina;
-            const dadosPagina = listaEquipesCompleta.slice(inicio, fim);
-
-            // Atualiza rodapé
-            const totalPaginas = Math.ceil(listaEquipesCompleta.length / itensPorPagina);
-            infoPag.innerHTML = `Página <span class="text-white">${paginaAtual + 1}</span> de <span class="text-white">${totalPaginas}</span> • Total de Equipes: <span class="text-white">${listaEquipesCompleta.length}</span>`;
-
-            dadosPagina.forEach((e, i) => {
-                const rank = inicio + i + 1;
-                const pct = Math.round((e.perfeitas / e.viagens) * 100);
+            // Função para gerar o HTML do Card
+            const criarCard = (p, indexAbsoluto, corTema) => {
+                if (!p) return ''; // Espaço vazio se a lista for menor
+                const rank = indexAbsoluto + 1;
+                const pct = Math.round((p.perfeitas / p.total) * 100);
                 
-                // Estilização baseada na nota
                 let borderClass = 'border-slate-700';
                 let textClass = 'text-gray-400';
                 let bgClass = '';
 
                 if (pct === 100) {
-                    borderClass = 'border-green-500';
-                    textClass = 'text-green-400 glow-text';
-                    bgClass = 'bg-green-900 bg-opacity-20'; // Destaque sutil no fundo
+                    borderClass = `border-${corTema}-500`;
+                    textClass = `text-${corTema}-400`;
+                    bgClass = `bg-${corTema}-500 bg-opacity-10`;
                 } else if (pct >= 90) {
-                    borderClass = 'border-green-700';
-                    textClass = 'text-green-200';
+                    borderClass = 'border-slate-600';
+                    textClass = 'text-white';
                 }
 
-                container.innerHTML += `
-                    <div class="glass-panel p-5 rounded-2xl flex items-center justify-between border-l-8 ${borderClass} ${bgClass} shadow-lg">
-                        <div class="flex items-center w-3/4">
-                            <span class="text-6xl font-black text-slate-600 mr-8 w-20 text-right">#${rank}</span>
-                            <div>
-                                <h3 class="text-white font-bold flex flex-wrap items-center mb-1">${e.htmlNome}</h3>
-                                <div class="flex items-center space-x-4 mt-1">
-                                    <span class="text-green-400 text-lg font-medium flex items-center">
-                                        <svg class="w-5 h-5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                        ${e.perfeitas} perfeitas
-                                    </span>
-                                    <span class="text-slate-500 text-sm">em ${e.viagens} viagens totais</span>
-                                </div>
+                return `
+                    <div class="glass-panel p-4 rounded-xl flex items-center justify-between border-l-4 ${borderClass} ${bgClass} mb-3">
+                        <div class="flex items-center min-w-0">
+                            <span class="text-3xl font-black text-slate-600 w-12 text-center mr-3">${rank}º</span>
+                            <div class="min-w-0">
+                                <h3 class="text-xl font-bold text-white truncate pr-2" title="${p.nome}">${p.nome}</h3>
+                                <p class="text-sm text-slate-400">${p.perfeitas} de ${p.total} perfeitas</p>
                             </div>
                         </div>
-                        <div class="text-right">
-                            <span class="text-6xl font-black ${textClass}">${pct}%</span>
-                            <span class="block text-sm text-slate-400 uppercase tracking-wider font-bold mt-1">Eficiência</span>
+                        <div class="text-right pl-2">
+                            <span class="text-3xl font-black ${textClass}">${pct}%</span>
                         </div>
                     </div>
                 `;
-            });
+            };
+
+            // Renderiza Motoristas
+            if (paginaMot.length === 0 && paginaAtual === 0) containerMot.innerHTML = '<p class="text-slate-500 text-center mt-10">Sem dados.</p>';
+            else paginaMot.forEach((m, i) => containerMot.innerHTML += criarCard(m, inicio + i, 'green'));
+
+            // Renderiza Ajudantes
+            if (paginaAju.length === 0 && paginaAtual === 0) containerAju.innerHTML = '<p class="text-slate-500 text-center mt-10">Sem dados.</p>';
+            else paginaAju.forEach((a, i) => containerAju.innerHTML += criarCard(a, inicio + i, 'blue'));
         }
     </script>
 </body>
