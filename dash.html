@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rio Quality - TV Dashboard</title>
+    <title>Rio Quality - Painel de Alertas</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
     
@@ -15,34 +15,41 @@
         body { font-family: 'Roboto', sans-serif; background-color: #0f172a; color: #e2e8f0; overflow: hidden; }
         .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .glow-text { text-shadow: 0 0 20px rgba(255,255,255,0.1); }
-        .fade-in { animation: fadeIn 1s ease-in-out; }
+        
+        /* Animação */
+        .fade-in { animation: fadeIn 0.8s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Barra de Progresso (Cor de Alerta) */
+        #progress-bar { height: 6px; background: linear-gradient(90deg, #f59e0b, #ef4444); width: 0%; position: absolute; bottom: 0; left: 0; transition: width 0.1s linear; }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
-    <header class="p-6 flex justify-between items-center bg-slate-900 border-b border-slate-800">
+    <header class="p-6 flex justify-between items-center bg-slate-900 border-b border-slate-800 relative">
         <div class="flex items-center space-x-4">
             <img src="https://www.rioquality.com.br/images/logo.webp" class="h-16 w-auto opacity-80">
             <div>
-                <h1 class="text-3xl font-black tracking-widest text-white uppercase">Performance Operacional Mensal</h1>
-                <p id="relogio" class="text-xl text-slate-400 font-mono">00:00:00</p>
+                <h1 class="text-3xl font-black tracking-widest text-white uppercase">Monitoramento de Risco</h1>
+                <p class="text-sm text-red-400 uppercase tracking-widest font-bold">REGISTROS DO MÊS</p>
+                <p id="relogio" class="text-xl text-slate-400 font-mono mt-1">00:00:00</p>
             </div>
         </div>
         <div class="text-right">
-            <h2 id="titulo-slide" class="text-4xl font-bold text-green-400 glow-text">CARREGANDO...</h2>
-            <p class="text-slate-500 text-sm">Atualização automática</p>
+            <h2 id="titulo-slide" class="text-4xl font-bold text-white glow-text">CARREGANDO...</h2>
+            <p id="subtitulo-slide" class="text-slate-500 text-sm">Atualização automática</p>
         </div>
+        <div id="progress-bar"></div>
     </header>
 
     <main class="flex-1 p-8 flex flex-col justify-center">
-        <div id="container-dados" class="grid grid-cols-1 gap-6 fade-in"></div>
+        <div id="container-dados" class="grid grid-cols-1 gap-6 fade-in">
+            </div>
     </main>
 
     <footer class="p-4 bg-slate-900 border-t border-slate-800 flex justify-around text-center text-xl font-bold">
-        <div class="text-green-500">PERFEITOS: <span id="footer-perfect" class="text-white">0</span></div>
-        <div class="text-red-500">COM FALTA: <span id="footer-falta" class="text-white">0</span></div>
-        <div class="text-blue-500">COM SOBRA: <span id="footer-sobra" class="text-white">0</span></div>
+        <div class="text-red-500">TOTAL FALTAS: <span id="footer-falta" class="text-white">0</span></div>
+        <div class="text-blue-500">TOTAL SOBRAS: <span id="footer-sobra" class="text-white">0</span></div>
     </footer>
 
     <script>
@@ -61,15 +68,22 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const TEMPO_SLIDE = 15000; 
-        const TEMPO_UPDATE = 300000; 
+        const TEMPO_SLIDE = 10000; // 10 segundos
+        const TEMPO_UPDATE = 300000; // 5 minutos
         
         let dadosEquipes = [];
         let dadosVeiculos = [];
         let dadosProdutos = []; 
         let slideAtual = 0; 
+        let startTime = Date.now();
 
         setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
+        
+        setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const pct = Math.min((elapsed / TEMPO_SLIDE) * 100, 100);
+            document.getElementById('progress-bar').style.width = pct + '%';
+        }, 100);
 
         buscarDados();
         setInterval(buscarDados, TEMPO_UPDATE);
@@ -77,9 +91,8 @@
 
         async function buscarDados() {
             const hoje = new Date();
-            // Pega o ano e mês atuais, e subtrai 1 do mês. Dia 1.
-            // Ex: Se hoje é 02/12, ele pega desde 01/11.
-            const passado = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1); 
+            const passado = new Date();
+            passado.setDate(hoje.getDate() - 30); // Últimos 30 dias
 
             try {
                 const snapshot = await db.collection("checklists")
@@ -97,57 +110,43 @@
             const equipes = {};
             const veiculos = {};
             const produtos = {};
-            let totalPerf = 0, totalFalta = 0, totalSobra = 0;
+            let totalFalta = 0, totalSobra = 0;
 
             dados.forEach(item => {
+                const listaFaltas = item.secao2?.divergencia_falta || [];
+                const teveFalta = listaFaltas.length > 0;
+                const teveSobra = (item.secao2?.sobras || []).length > 0;
+
+                // === EQUIPE ===
                 const mot = item.secao3?.motorista || '';
-                
-                // === FILTRO N/A ===
-                if (!mot || mot === 'N/A' || mot.trim() === '') return;
+                if (mot && mot !== 'N/A' && mot.trim() !== '') {
+                    const aju1 = item.secao3?.ajudante1 || '';
+                    const aju2 = item.secao3?.ajudante2 || '';
+                    
+                    let teamKey = mot.split(' ')[0];
+                    if(aju1 && aju1 !== 'N/A') teamKey += '+' + aju1.split(' ')[0];
+                    if(aju2 && aju2 !== 'N/A') teamKey += '+' + aju2.split(' ')[0];
 
-                const aju1 = item.secao3?.ajudante1 || '';
-                const aju2 = item.secao3?.ajudante2 || '';
-                
-                // === CHAVE ÚNICA (Para contagem) ===
-                let teamKey = mot.split(' ')[0];
-                if(aju1 && aju1 !== 'N/A') teamKey += '+' + aju1.split(' ')[0];
-                if(aju2 && aju2 !== 'N/A') teamKey += '+' + aju2.split(' ')[0];
+                    let htmlNome = `<span class="inline-block text-[10px] font-bold bg-blue-600 text-white px-2 py-1 rounded mr-2 align-middle tracking-wider">MOT</span>${mot.split(' ')[0]}`;
+                    if(aju1 && aju1 !== 'N/A') htmlNome += ` <span class="text-slate-500 text-sm mx-2">+</span> <span class="inline-block text-[10px] font-bold bg-purple-600 text-white px-2 py-1 rounded mr-2 align-middle tracking-wider">AJU</span>${aju1.split(' ')[0]}`;
+                    if(aju2 && aju2 !== 'N/A') htmlNome += ` <span class="text-slate-500 text-sm mx-2">+</span> <span class="inline-block text-[10px] font-bold bg-purple-600 text-white px-2 py-1 rounded mr-2 align-middle tracking-wider">AJU</span>${aju2.split(' ')[0]}`;
 
-                // === NOME FORMATADO (Para Exibição com Cores) ===
-                // Cria as etiquetas coloridas HTML
-                let htmlNome = `<span class="inline-block text-[10px] font-bold bg-blue-600 text-white px-2 py-1 rounded mr-2 align-middle tracking-wider">MOT</span>${mot.split(' ')[0]}`;
-                
-                if(aju1 && aju1 !== 'N/A') {
-                    htmlNome += ` <span class="text-slate-500 text-sm mx-2">+</span> <span class="inline-block text-[10px] font-bold bg-purple-600 text-white px-2 py-1 rounded mr-2 align-middle tracking-wider">AJU</span>${aju1.split(' ')[0]}`;
+                    if(!equipes[teamKey]) equipes[teamKey] = { nomeHtml: htmlNome, viagens: 0, faltas: 0 };
+                    equipes[teamKey].viagens++;
+                    if(teveFalta) equipes[teamKey].faltas++;
                 }
-                if(aju2 && aju2 !== 'N/A') {
-                    htmlNome += ` <span class="text-slate-500 text-sm mx-2">+</span> <span class="inline-block text-[10px] font-bold bg-purple-600 text-white px-2 py-1 rounded mr-2 align-middle tracking-wider">AJU</span>${aju2.split(' ')[0]}`;
-                }
-
-                // Inicializa ou Atualiza a Equipe
-                if(!equipes[teamKey]) {
-                    equipes[teamKey] = { 
-                        nomeReal: teamKey, // Nome simples
-                        nomeHtml: htmlNome, // Nome colorido
-                        viagens: 0, perfeitas: 0, faltas: 0 
-                    };
-                }
-                equipes[teamKey].viagens++;
 
                 // === VEÍCULOS ===
                 const placa = item.secao1?.veiculo || 'N/A';
                 if (placa !== 'N/A' && placa.trim() !== '') {
                     if(!veiculos[placa]) veiculos[placa] = { placa: placa, viagens: 0, faltas: 0 };
                     veiculos[placa].viagens++;
+                    if(teveFalta) veiculos[placa].faltas++;
                 }
 
-                // === OCORRÊNCIAS ===
-                const listaFaltas = item.secao2?.divergencia_falta || [];
-                const teveFalta = listaFaltas.length > 0;
-                const teveSobra = (item.secao2?.sobras || []).length > 0;
-                const teveComp = item.secao1?.comportamento === 'Sim';
-
+                // === PRODUTOS ===
                 if (teveFalta) {
+                    totalFalta++;
                     listaFaltas.forEach(f => {
                         let nomeProd = f.descricao || f.produto || 'Produto s/ Nome';
                         if(f.produto && f.descricao) nomeProd = `[${f.produto}] ${f.descricao}`;
@@ -156,19 +155,9 @@
                     });
                 }
 
-                if(!teveFalta && !teveSobra && !teveComp) {
-                    equipes[teamKey].perfeitas++;
-                    totalPerf++;
-                }
-                if(teveFalta) {
-                    equipes[teamKey].faltas++;
-                    totalFalta++;
-                    if (placa !== 'N/A' && veiculos[placa]) veiculos[placa].faltas++;
-                }
                 if(teveSobra) totalSobra++;
             });
 
-            document.getElementById('footer-perfect').innerText = totalPerf;
             document.getElementById('footer-falta').innerText = totalFalta;
             document.getElementById('footer-sobra').innerText = totalSobra;
 
@@ -181,67 +170,31 @@
 
         function proximoSlide() {
             slideAtual++;
-            if(slideAtual > 3) slideAtual = 0;
+            if(slideAtual > 2) slideAtual = 0; // Apenas 3 slides de alerta (0, 1, 2)
+            startTime = Date.now();
             renderizarSlide();
         }
 
         function renderizarSlide() {
             const container = document.getElementById('container-dados');
             const titulo = document.getElementById('titulo-slide');
+            const sub = document.getElementById('subtitulo-slide');
             container.innerHTML = '';
             
             container.classList.remove('fade-in');
             void container.offsetWidth; 
             container.classList.add('fade-in');
 
+            // === SLIDE 0: EQUIPES COM FALTA (Laranja) ===
             if (slideAtual === 0) {
-                // === 1. MELHORES EQUIPES ===
-                titulo.className = "text-4xl font-bold text-green-400 glow-text";
-                titulo.innerText = "🏆 CLUBE DA EXCELÊNCIA (100%)";
-                
-                const top = dadosEquipes
-                    .filter(e => e.viagens >= 3)
-                    .sort((a,b) => {
-                        const pctA = (a.perfeitas / a.viagens);
-                        const pctB = (b.perfeitas / b.viagens);
-                        if (Math.abs(pctB - pctA) > 0.001) return pctB - pctA; 
-                        return b.viagens - a.viagens;
-                    })
-                    .slice(0, 5);
+                 titulo.className = "text-4xl font-bold text-orange-400 glow-text";
+                 titulo.innerText = "⚠️ EQUIPES COM MAIS FALTAS";
+                 sub.innerText = "Registros no sistema";
+                 const alertas = dadosEquipes.filter(e => e.faltas > 0).sort((a,b) => b.faltas - a.faltas).slice(0, 5);
+                 
+                 if (alertas.length === 0) { container.innerHTML = '<h3 class="text-center text-green-500 text-2xl mt-10">Nenhuma falta de equipe registrada!</h3>'; return; }
 
-                if (top.length === 0) { container.innerHTML = '<h3 class="text-center text-slate-500 text-2xl mt-10">Ainda sem destaques hoje.</h3>'; return; }
-
-                top.forEach((e, i) => {
-                    const pct = Math.round((e.perfeitas / e.viagens) * 100);
-                    const borderClass = pct === 100 ? 'border-green-500' : 'border-green-800';
-                    const textClass = pct === 100 ? 'text-white' : 'text-gray-400';
-
-                    // USA O NOME HTML AQUI
-                    container.innerHTML += `
-                        <div class="glass-panel p-6 rounded-2xl flex items-center justify-between border-l-8 ${borderClass}">
-                            <div class="flex items-center w-3/4">
-                                <span class="text-5xl font-black text-slate-600 mr-6">#${i+1}</span>
-                                <div>
-                                    <h3 class="text-2xl font-bold text-white flex flex-wrap items-center">${e.nomeHtml}</h3>
-                                    <p class="text-green-400 text-lg mt-1">${e.perfeitas} viagens perfeitas <span class="text-slate-500 text-sm">/ ${e.viagens} total</span></p>
-                                </div>
-                            </div>
-                            <div class="text-right">
-                                <span class="text-5xl font-black ${textClass}">${pct}%</span>
-                                <span class="block text-xs text-slate-400 uppercase tracking-wider">Eficiência</span>
-                            </div>
-                        </div>`;
-                });
-
-            } else if (slideAtual === 1) {
-                // === 2. ALERTA EQUIPES ===
-                titulo.className = "text-4xl font-bold text-orange-400 glow-text";
-                titulo.innerText = "⚠️ EQUIPES COM MAIS FALTAS";
-                const alertas = dadosEquipes.filter(e => e.faltas > 0).sort((a,b) => b.faltas - a.faltas).slice(0, 5);
-                
-                if (alertas.length === 0) { container.innerHTML = '<h3 class="text-center text-green-500 text-2xl mt-10">Nenhuma falta de equipe registrada!</h3>'; return; }
-
-                alertas.forEach((e, i) => {
+                 alertas.forEach((e, i) => {
                     container.innerHTML += `
                         <div class="glass-panel p-5 rounded-2xl flex items-center justify-between border-l-8 border-orange-500">
                             <div class="flex items-center w-3/4">
@@ -253,27 +206,33 @@
                             </div>
                             <div class="text-right"><span class="text-4xl font-black text-white">${e.faltas}</span><span class="block text-xs text-slate-400 uppercase">Ocorrências</span></div>
                         </div>`;
-                });
+                 });
 
-            } else if (slideAtual === 2) {
-                // === 3. VEÍCULOS ===
-                titulo.className = "text-4xl font-bold text-blue-400 glow-text";
-                titulo.innerText = "🚛 VEÍCULOS COM MAIS FALTAS";
-                const veicAlertas = dadosVeiculos.filter(v => v.faltas > 0).sort((a,b) => b.faltas - a.faltas).slice(0, 5);
-                if (veicAlertas.length === 0) { container.innerHTML = '<h3 class="text-center text-green-500 text-2xl mt-10">Frota operando 100% (Sem faltas).</h3>'; return; }
-                veicAlertas.forEach((v, i) => {
+            // === SLIDE 1: VEÍCULOS (Azul) ===
+            } else if (slideAtual === 1) {
+                 titulo.className = "text-4xl font-bold text-blue-400 glow-text";
+                 titulo.innerText = "🔧 VEÍCULOS COM MAIS FALTAS";
+                 sub.innerText = "Faltas registradas";
+                 const veicAlertas = dadosVeiculos.filter(v => v.faltas > 0).sort((a,b) => b.faltas - a.faltas).slice(0, 5);
+                 
+                 if (veicAlertas.length === 0) { container.innerHTML = '<h3 class="text-center text-green-500 text-2xl mt-10">Frota operando 100% (Sem faltas).</h3>'; return; }
+                 
+                 veicAlertas.forEach((v, i) => {
                     container.innerHTML += `<div class="glass-panel p-5 rounded-2xl flex items-center justify-between border-l-8 border-blue-500"><div class="flex items-center"><span class="text-5xl font-black text-slate-600 mr-6">${i+1}</span><div><h3 class="text-3xl font-bold text-white">${v.placa}</h3><p class="text-blue-400 text-lg">Faltas registradas neste carro</p></div></div><div class="text-right"><span class="text-4xl font-black text-red-400">${v.faltas}</span><span class="block text-xs text-slate-400 uppercase">Cargas c/ Problema</span></div></div>`;
-                });
+                 });
 
+            // === SLIDE 2: PRODUTOS (Roxo) ===
             } else {
-                // === 4. PRODUTOS ===
-                titulo.className = "text-4xl font-bold text-purple-400 glow-text";
-                titulo.innerText = "📦 PRODUTOS MAIS FALTANTES";
-                const prodAlertas = dadosProdutos.sort((a,b) => b.qtd - a.qtd).slice(0, 5);
-                if (prodAlertas.length === 0) { container.innerHTML = '<h3 class="text-center text-green-500 text-2xl mt-10">Nenhum produto com falta!</h3>'; return; }
-                prodAlertas.forEach((p, i) => {
-                    container.innerHTML += `<div class="glass-panel p-5 rounded-2xl flex items-center justify-between border-l-8 border-purple-500"><div class="flex items-center overflow-hidden"><span class="text-5xl font-black text-slate-600 mr-6 flex-shrink-0">#${i+1}</span><div class="min-w-0"><h3 class="text-2xl font-bold text-white truncate pr-4">${p.nome}</h3><p class="text-purple-400 text-lg">Item crítico do período</p></div></div><div class="text-right flex-shrink-0"><span class="text-4xl font-black text-red-400">${p.qtd}</span><span class="block text-xs text-slate-400 uppercase">Unidades Sumidas</span></div></div>`;
-                });
+                 titulo.className = "text-4xl font-bold text-purple-400 glow-text";
+                 titulo.innerText = "📦 PRODUTOS COM MAIS FALTA";
+                 sub.innerText = "Faltas registradas";
+                 const prodAlertas = dadosProdutos.sort((a,b) => b.qtd - a.qtd).slice(0, 5);
+                 
+                 if (prodAlertas.length === 0) { container.innerHTML = '<h3 class="text-center text-green-500 text-2xl mt-10">Nenhum produto com falta!</h3>'; return; }
+                 
+                 prodAlertas.forEach((p, i) => {
+                    container.innerHTML += `<div class="glass-panel p-5 rounded-2xl flex items-center justify-between border-l-8 border-purple-500"><div class="flex items-center overflow-hidden"><span class="text-5xl font-black text-slate-600 mr-6 flex-shrink-0">#${i+1}</span><div class="min-w-0"><h3 class="text-2xl font-bold text-white truncate pr-4">${p.nome}</h3><p class="text-purple-400 text-lg">Item crítico do período</p></div></div><div class="text-right flex-shrink-0"><span class="text-4xl font-black text-red-400">${p.qtd}</span><span class="block text-xs text-slate-400 uppercase">Unidades Registradas</span></div></div>`;
+                 });
             }
         }
     </script>
