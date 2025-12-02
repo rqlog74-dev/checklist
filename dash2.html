@@ -148,7 +148,7 @@
 
             // Transforma em Lista e Ordena (100% primeiro, depois volume)
             listaEquipesCompleta = Object.values(equipes)
-                .filter(e => e.viagens >= 3) // Mínimo 3 viagens
+                .filter(e => e.viagens >= 2) // Mínimo 3 viagens
                 .sort((a,b) => {
                     const pctA = (a.perfeitas / a.viagens);
                     const pctB = (b.perfeitas / b.viagens);
