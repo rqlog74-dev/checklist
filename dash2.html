@@ -105,25 +105,32 @@
         setInterval(proximaPagina, TEMPO_PAGINA);
 
         async function buscarDados() {
-    const hoje = new Date();
-    const passado = new Date();
-    passado.setDate(hoje.getDate() - 30); 
+            const hoje = new Date();
+            
+            // Pega o primeiro dia do MÊS PASSADO
+            // Ex: Se hoje é Dezembro (11), isso vira Novembro (10), dia 1
+            const primeiroDiaMesPassado = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+            
+            // Pega o último dia do MÊS PASSADO
+            // O dia "0" do mês atual volta um dia, caindo no último dia do mês anterior
+            const ultimoDiaMesPassado = new Date(hoje.getFullYear(), hoje.getMonth(), 0, 23, 59, 59);
+
+            // Atualiza o título na tela para a galera saber de que mês estamos falando
+            const nomeMes = primeiroDiaMesPassado.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            const subTitulo = document.querySelector('p.text-slate-400'); // Pega o subtítulo do header
+            if(subTitulo) subTitulo.innerText = `REFERÊNCIA: ${nomeMes.toUpperCase()}`;
 
             try {
                 const snapshot = await db.collection("checklists")
-                    .where('createdAt', '>=', passado)
+                    .where('createdAt', '>=', primeiroDiaMesPassado)
+                    .where('createdAt', '<=', ultimoDiaMesPassado)
                     .get();
 
                 const dados = snapshot.docs.map(doc => doc.data());
-                processarDados(dados);
+                processarDados(dados); // Ou processarDadosIndividuais dependendo do arquivo
             } catch (error) {
-                console.error("Erro:", error);
+                console.error("Erro na TV:", error);
             }
-        }
-
-        function norm(nome) {
-            if(!nome || nome === 'N/A' || nome.trim() === '') return null;
-            return nome.trim().toUpperCase();
         }
 
         function processarDados(dados) {
