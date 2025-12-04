@@ -77,7 +77,6 @@
 
         const ITENS_POR_PAGINA = 6; 
         const TEMPO_PAGINA = 15000; 
-        const TEMPO_UPDATE = 300000; 
 
         let todosMotoristas = [];
         let todosAjudantes = [];
@@ -93,7 +92,6 @@
         }, 100);
 
         buscarDados();
-        setInterval(buscarDados, TEMPO_UPDATE);
         setInterval(proximaPagina, TEMPO_PAGINA);
 
         function norm(nome) {

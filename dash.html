@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rio Quality - RANKING TOP 12 </title>
+    <title>Rio Quality - Comparativo TV</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
     
@@ -15,7 +15,8 @@
         body { font-family: 'Roboto', sans-serif; background-color: #0f172a; color: #e2e8f0; overflow: hidden; }
         
         /* Design Compacto para TV */
-        .glass-panel { background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glass-panel { background: rgba(30, 41, 59, 0.6); backdrop-filter: blur(8px); border: 1px solid rgba(255, 255, 255, 0.05); }
+        .glow-text { text-shadow: 0 0 15px rgba(255,255,255,0.1); }
         
         /* Animação */
         .fade-in { animation: fadeIn 0.6s ease-in-out; }
@@ -33,12 +34,13 @@
         <div class="flex items-center space-x-4">
             <img src="https://www.rioquality.com.br/images/logo.webp" class="h-14 w-auto opacity-90">
             <div>
-                <h1 class="text-2xl font-black tracking-wide text-white uppercase">Rio Quality - RANKING TOP 12</h1>
+                <h1 class="text-2xl font-black tracking-wide text-white uppercase">RANKING TOP 12</h1>
                 <p id="titulo-cargo" class="text-blue-400 text-sm font-bold tracking-widest uppercase">COMPARATIVO: MOTORISTAS</p>
             </div>
         </div>
         <div class="text-right">
             <p id="relogio" class="text-2xl text-white font-mono font-bold">00:00</p>
+            <p class="text-xs text-slate-500 uppercase tracking-widest mt-1">Atualização: Semanal</p>
         </div>
         <div id="progress-bar"></div>
     </header>
@@ -82,8 +84,9 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const TEMPO_SLIDE = 15000; // 15 segundos por tela
-        const TEMPO_UPDATE = 604800000; // 7 dias (7 * 24 * 60 * 60 * 1000)
+        // --- CONFIGURAÇÃO DE ECONOMIA ---
+        const TEMPO_SLIDE = 15000; // 15 segundos por tela (Visual)
+        const TEMPO_UPDATE = 604800000; // 7 DIAS (Economia de Leitura)
         
         let dadosAnterior = [];
         let dadosAtual = [];
@@ -163,6 +166,7 @@
                 const computar = (nome, cargo) => {
                     if (!nome) return;
                     if (!stats[nome]) stats[nome] = { nome, cargo, viagens: 0, perfeitas: 0 };
+                    
                     stats[nome].viagens++;
                     if (isPerfect) stats[nome].perfeitas++;
                     if (cargo === 'MOT') stats[nome].cargo = 'MOT';
