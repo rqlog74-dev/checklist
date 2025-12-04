@@ -24,14 +24,14 @@
             overflow: hidden;
         }
 
-        .header {
+.header {
     width: 100%;
     max-width: 1600px;
     margin: 20px 0;
     
-    /* Grid de 3 colunas para garantir o centro exato */
     display: grid;
-    grid-template-columns: 1fr auto 1fr; /* Esquerda | Meio (Auto) | Direita */
+    /* 1fr (Esquerda) | auto (Meio - ajusta ao conteúdo) | 1fr (Direita) */
+    grid-template-columns: 1fr auto 1fr; 
     align-items: center;
     
     background: var(--card-bg);
@@ -40,6 +40,15 @@
     box-shadow: 0 4px 15px rgba(0,0,0,0.05);
     z-index: 10;
 }
+.center-info {
+    grid-column: 2; /* Fica na coluna do meio */
+    
+    display: flex;
+    flex-direction: column; /* Um embaixo do outro */
+    align-items: center; /* <--- ISSO CENTRALIZA TUDO NO MEIO HORIZONTALMENTE */
+    justify-content: center;
+    text-align: center; /* Garante que o texto não alinhe à esquerda */
+}
 .logo-container {
     grid-column: 1; /* Força na primeira coluna */
     display: flex;
@@ -47,14 +56,13 @@
     justify-content: flex-start; /* Alinha à esquerda */
 }
 .page-title {
-    grid-column: 2; /* Força na coluna do meio */
-    font-size: 36px; /* Fonte Grande igual na imagem */
-    font-weight: 900; /* Negrito Forte */
-    color: #333; /* Cor escura (quase preto) */
+    font-size: 32px; /* Ajustei para ficar proporcional */
+    font-weight: 900;
+    color: #333;
     text-transform: uppercase;
-    letter-spacing: -1px; /* Letras juntinhas */
-    text-align: center;
-    white-space: nowrap; /* Não quebra linha */
+    letter-spacing: -1px;
+    margin-bottom: 5px;
+    line-height: 1;
 }
 .live-status {
     grid-column: 3; /* Força na última coluna */
@@ -63,7 +71,29 @@
     flex-direction: column;
     align-items: flex-end;
 }
-        .logo { font-size: 32px; font-weight: 900; color: var(--brand); display: flex; align-items: center; gap: 15px; }
+.page-title {
+    font-size: 40px;
+    font-weight: 900;
+    color: #333;
+    text-transform: uppercase;
+    letter-spacing: -1px;
+    margin-bottom: 5px; /* Espaço pro valor */
+}
+.total-loss-display {
+    font-size: 42px; /* Bem grande */
+    font-weight: 900;
+    color: var(--red); /* Vermelho */
+    letter-spacing: -2px;
+    line-height: 1;
+}
+.total-loss-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #666;
+    font-weight: 700;
+}
+
+        .logo { font-size: 40px; font-weight: 900; color: var(--brand); display: flex; align-items: center; gap: 15px; }
         .live-status { display: flex; flex-direction: column; align-items: flex-end; }
         .live-badge { background: #dcfce7; color: #166534; padding: 5px 12px; border-radius: 20px; font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
         .live-dot { width: 8px; height: 8px; background: #16a34a; border-radius: 50%; animation: pulse 2s infinite; }
@@ -102,7 +132,11 @@
         <img src="https://www.rioquality.com.br/images/logo.webp" alt="Rio Quality" style="height: 60px;">
     </div>
 
-    <div class="page-title">TOP 20 FALTA/AVARIA</div>
+    <div class="center-info">
+        <div class="page-title">TOP 20 FALTA/AVARIA</div>
+        <div class="total-loss-label">PERCA TOTAL DO DIA</div>
+        <div class="total-loss-display" id="headerTotalLoss">R$ 0,00</div>
+    </div>
 
     <div class="live-status">
         <div class="live-badge"><div class="live-dot"></div> AO VIVO</div>
@@ -217,68 +251,90 @@
         }
 
         function renderSlide(data) {
-            const track = document.getElementById('slideTrack');
-            const grouped = {};
-            data.forEach(d => {
-                const prod = getVal(d, 'PRODUTO') || 'Item';
-                const cod = getVal(d, 'CODIGO') || ''; // Pega o código
-                
-                if(!grouped[prod]) grouped[prod] = { prod, cod, faltaMercadoria:0, perdaQtd:0, valorPerda:0 };
-                
-                grouped[prod].faltaMercadoria += cleanNum(getVal(d, 'FALTA APOS VALIDACAO DO ESTOQUE'));
-                grouped[prod].perdaQtd += cleanNum(getVal(d, 'PERDA _AVARIA'));
-                grouped[prod].valorPerda += cleanNum(getVal(d, 'VALOR DE PERDA'));
-            });
+    const track = document.getElementById('slideTrack');
+    const grouped = {};
 
-            let items = Object.values(grouped)
-                .filter(i => i.valorPerda > 0 || i.faltaMercadoria > 0 || i.perdaQtd > 0)
-                .sort((a,b) => b.valorPerda - a.valorPerda);
+    // 1. Agrupa os dados por produto (para somar linhas repetidas)
+    data.forEach(d => {
+        const prod = getVal(d, 'PRODUTO') || 'Item';
+        const cod = getVal(d, 'CODIGO') || ''; 
+        
+        if(!grouped[prod]) grouped[prod] = { prod, cod, faltaMercadoria:0, perdaQtd:0, valorPerda:0 };
+        
+        grouped[prod].faltaMercadoria += cleanNum(getVal(d, 'FALTA APOS VALIDACAO DO ESTOQUE'));
+        grouped[prod].perdaQtd += cleanNum(getVal(d, 'PERDA _AVARIA'));
+        grouped[prod].valorPerda += cleanNum(getVal(d, 'VALOR DE PERDA'));
+    });
 
-            if (items.length === 0) {
-                track.innerHTML = '<div style="padding:100px; font-size:30px; font-weight:bold; color:#009688">✅ Nenhuma divergência hoje.</div>';
-                track.style.animation = 'none';
-                return;
-            }
+    // 2. Cria a lista final e ordena
+    let items = Object.values(grouped)
+        .filter(i => i.valorPerda > 0 || i.faltaMercadoria > 0 || i.perdaQtd > 0)
+        .sort((a,b) => b.valorPerda - a.valorPerda);
 
-            const createCard = (item) => `
-                <div class="product-card">
-                    <div class="image-area">
-                        <img src="${getImage(item.cod, item.prod)}" class="product-img">
+    // ============================================================
+    // NOVO: CALCULA E MOSTRA O TOTAL NO CABEÇALHO
+    // ============================================================
+    // Soma todas as perdas da lista
+    let totalGeral = items.reduce((acumulado, item) => acumulado + item.valorPerda, 0);
+
+    // Atualiza o elemento HTML (se ele existir)
+    const headerElement = document.getElementById('headerTotalLoss');
+    if (headerElement) {
+        headerElement.innerText = BRL.format(totalGeral);
+    }
+    // ============================================================
+
+    // 3. Se não tiver nada, mostra mensagem de sucesso
+    if (items.length === 0) {
+        track.innerHTML = '<div style="padding:100px; font-size:30px; font-weight:bold; color:#009688">✅ Nenhuma divergência hoje.</div>';
+        track.style.animation = 'none';
+        // Zera o total também
+        if (headerElement) headerElement.innerText = BRL.format(0);
+        return;
+    }
+
+    // 4. Gera os Cards HTML
+    const createCard = (item) => `
+        <div class="product-card">
+            <div class="image-area">
+                <img src="${getImage(item.cod, item.prod)}" class="product-img">
+            </div>
+            <div class="card-body">
+                <div class="product-name">${item.prod}</div>
+                <div>
+                    <span class="price-label">PREJUÍZO TOTAL</span>
+                    <div class="price-display">${BRL.format(item.valorPerda)}</div>
+                </div>
+                <div class="stats-row">
+                    <div class="stat-item">
+                        <span class="stat-label">FALTA</span>
+                        <span class="stat-val val-falta">${item.faltaMercadoria}</span>
                     </div>
-                    <div class="card-body">
-                        <div class="product-name">${item.prod}</div>
-                        <div>
-                            <span class="price-label">PERDA VALOR</span>
-                            <div class="price-display">${BRL.format(item.valorPerda)}</div>
-                        </div>
-                        <div class="stats-row">
-                            <div class="stat-item">
-                                <span class="stat-label">FALTA </span>
-                                <span class="stat-val val-falta">${item.faltaMercadoria}</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">AVARIA</span>
-                                <span class="stat-val val-perda">${item.perdaQtd}</span>
-                            </div>
-                        </div>
+                    <div class="stat-item">
+                        <span class="stat-label">AVARIA</span>
+                        <span class="stat-val val-perda">${item.perdaQtd}</span>
                     </div>
-                </div>`;
+                </div>
+            </div>
+        </div>`;
 
-            let cardsHTML = items.map(createCard).join('');
-            let cloneCount = 0;
-            while (items.length + (items.length * cloneCount) < 15) { 
-                cardsHTML += items.map(createCard).join('');
-                cloneCount++;
-                if(cloneCount > 10) break;
-            }
+    let cardsHTML = items.map(createCard).join('');
+    
+    // Duplicação para loop infinito suave
+    let cloneCount = 0;
+    while (items.length + (items.length * cloneCount) < 15) { 
+        cardsHTML += items.map(createCard).join('');
+        cloneCount++;
+        if(cloneCount > 10) break;
+    }
 
-            if (track.innerHTML !== cardsHTML) {
-                track.innerHTML = cardsHTML;
-                const totalCards = items.length * (cloneCount + 1);
-                const duration = Math.max(30, totalCards * 5); 
-                track.style.animation = `scroll ${duration}s linear infinite`;
-            }
-        }
+    if (track.innerHTML !== cardsHTML) {
+        track.innerHTML = cardsHTML;
+        const totalCards = items.length * (cloneCount + 1);
+        const duration = Math.max(30, totalCards * 5); 
+        track.style.animation = `scroll ${duration}s linear infinite`;
+    }
+}
     </script>
 </body>
 </html>
