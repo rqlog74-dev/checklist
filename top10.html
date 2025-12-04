@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rio Quality - TV Mode </title>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        :root { --bg: #f8f9fa; --card-bg: #ffffff; --text: #1e293b; --red: #dc2626; --purple: #fdba29; --green: #010f06; --brand: #423f3f; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            width: 100%; max-width: 1600px; margin: 20px 0; display: flex; justify-content: space-between; align-items: center;
+            background: var(--card-bg); padding: 15px 40px; border-radius: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); z-index: 10;
+        }
+        .logo { font-size: 32px; font-weight: 900; color: var(--brand); display: flex; align-items: center; gap: 15px; }
+        .live-status { display: flex; flex-direction: column; align-items: flex-end; }
+        .live-badge { background: #dcfce7; color: #166534; padding: 5px 12px; border-radius: 20px; font-weight: 800; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; display: flex; align-items: center; gap: 5px; margin-bottom: 5px; }
+        .live-dot { width: 8px; height: 8px; background: #16a34a; border-radius: 50%; animation: pulse 2s infinite; }
+        .update-time { font-size: 14px; color: #64748b; font-weight: 600; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        .slide-wrapper { width: 100%; flex-grow: 1; display: flex; align-items: center; overflow: hidden; position: relative; }
+        .slide-track { display: flex; gap: 40px; width: max-content; animation: scroll 60s linear infinite; padding-left: 50px; }
+        @keyframes scroll { 0% { transform: translateX(0); } 100% { transform: translateX(-50%); } }
+
+        .product-card {
+            width: 380px; flex-shrink: 0; background: var(--card-bg); border-radius: 20px; overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0,0,0,0.1); border: 1px solid #e2e8f0; display: flex; flex-direction: column;
+        }
+        .image-area { height: 280px; background: #ffffff; display: flex; align-items: center; justify-content: center; padding: 30px; }
+        .product-img { max-height: 100%; max-width: 100%; object-fit: contain; filter: drop-shadow(0 10px 10px rgba(255, 255, 255, 0.15)); }
+        .card-body { padding: 25px; text-align: center; flex-grow: 1; display: flex; flex-direction: column; }
+        .product-name { font-size: 20px; font-weight: 800; color: var(--text); margin-bottom: 20px; line-height: 1.3; height: 52px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; text-transform: uppercase; }
+        .price-display { font-size: 42px; font-weight: 900; color: var(--red); margin-bottom: 5px; letter-spacing: -2px; }
+        .price-label { font-size: 25px; text-transform: uppercase; color: #991b1b; font-weight: 700; display: block; margin-bottom: 20px;}
+        .stats-row { display: flex; justify-content: space-between; background: #f1f5f9; border-radius: 12px; padding: 15px; margin-top: auto; }
+        .stat-item { text-align: center; flex: 1; }
+        .stat-item:first-child { border-right: 2px solid #e2e8f0; }
+        .stat-label { font-size: 19px; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 5px; color: #64748b; }
+        .stat-val { font-size: 30px; font-weight: 900; }
+        .val-falta { color: var(--red); }
+        .val-perda { color: var(--purple); }
+
+        #loading-indicator { position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 30px; font-size: 12px; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <div class="logo">
+            <img src="https://www.rioquality.com.br/images/logo.webp" 
+                 alt="Logo" 
+                 style="height: 50px; width: auto;">
+            
+            <span>TOP 20 FALTA/AVARIA</span>
+        </div>
+        <div class="live-status">
+            <div class="live-badge"><div class="live-dot"></div> AO VIVO</div>
+            <div class="update-time" id="lastUpdate">Carregando...</div>
+        </div>
+    </div>
+
+    <div class="slide-wrapper"><div class="slide-track" id="slideTrack"></div></div>
+    <div id="loading-indicator">Atualizando...</div>
+
+    <script>
+        // =================================================================
+        // ÁREA DE CONFIGURAÇÃO DE IMAGENS (EDITE AQUI!)
+        // =================================================================
+        const CATALOGO_IMAGENS = {
+            // "CÓDIGO": "LINK DA FOTO",
+            "42604": "https://i.imgur.com/vC72xDI.jpeg", // CREME AVELA C/ CACAU 3KG NUTELLA
+            "39687": "https://i.imgur.com/qTMPLnb.png", // CREME AVELA C/ CACAU 650 GR NUTELLA
+            "2121": "https://i.imgur.com/YCZBwId.png", // AZEITE E.V. GF 500ML ANDORINHA PORTUGUES
+            "53600": "https://i.imgur.com/PPyl2Tm.png", // AZEITE E.V BB 4,85L SANTIAGO
+            "52333": "https://i.imgur.com/oSsJ4Xr.png", // AZEITE E.V. TRUFADO 125ML MONTOSCO TRUFA BRANCA
+            "53594": "https://i.imgur.com/KecMfkT.png", // AZEITE E.V BB 4,85L O LIVE CHILENO
+            "52269": "https://i.imgur.com/enFez2O.png", // AZEITE E.V. GF 450ML O LIVE CHILENO
+            "25061": "https://i.imgur.com/ePjGtKl.png", // LEITE COND SEMI 395G ITAMBE 4% TG
+            "40524": "https://i.imgur.com/Yo9Lgam.jpeg", // LEITE COND INTEG 5KG ITAMBE 8% TG
+            "11702": "https://i.imgur.com/kCl2Qzj.png", //LEITE PO INTEGRAL 400GR ITAMBE
+            "11181": "https://i.imgur.com/A5ITZhA.png", //LEITE LV INTEGRAL 1L ELEGE
+            "53042": "https://i.imgur.com/vGPkA9h.jpeg", //OLEO SOJA 18L BAG IN BOX VITALIV
+            "49244": "https://i.imgur.com/hXC9ohF.jpeg", //OLEO SOJA 900ML VITALIV
+            "50095": "https://i.imgur.com/GOiOGON.jpeg", //OLEO DE ALGODAO 14,5KG ELOGIATA
+            "39845": "https://i.imgur.com/NUosJdj.png", //CAFE TM EXTRA FORTE 500G EVOLUTTO
+            "27843": "https://i.imgur.com/abP9VLc.png", //CAFE TM EX FORTE 500G MELITTA VACUO
+            "48503": "https://i.imgur.com/mshmi96.png", //CAFE TM EXTRA FORTE 500G 3 CORACOES
+            "27841": "https://i.imgur.com/vH5I87c.png", //CAFE TM TRAD 500G MELITTA VACUO
+            "39844": "https://i.imgur.com/wiRGKsL.jpeg", //CAFE TM EXTRA FORTE 250G EVOLUTTO
+            "48428":"https://i.imgur.com/LaMWvwG.png",//CAFE TM TRAD 500G 3 CORACOES
+
+            
+            
+
+
+
+        };
+
+        const IMAGEM_PADRAO = "https://cdn-icons-png.flaticon.com/512/1524/1524539.png"; 
+        // =================================================================
+
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ9rphl04gxSAih6JrEbWEErVLdYKIpvVFcNCfCoh6lKSTnfYDIDoOuOYW8-XSdci4vi_I9kxBfmj6Z/pub?output=csv';
+        const PROXY_URL = 'https://corsproxy.io/?' + encodeURIComponent(SHEET_URL);
+        const REFRESH_INTERVAL = 300000;
+        const BRL = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        window.onload = function() { loadData(); setInterval(loadData, REFRESH_INTERVAL); }
+
+        function loadData() {
+            document.getElementById('loading-indicator').style.display = 'block';
+            fetch(PROXY_URL + '&t=' + new Date().getTime())
+                .then(r => r.text())
+                .then(csv => {
+                    Papa.parse(csv, {
+                        header: true, skipEmptyLines: true,
+                        transformHeader: h => h.replace(/[\r\n]+/g, " ").trim().toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""),
+                        complete: res => processData(res.data)
+                    });
+                })
+                .catch(err => console.error("Erro:", err));
+        }
+
+        function cleanNum(val) {
+            if (!val) return 0;
+            let str = String(val).replace('R$', '').trim();
+            if (str.includes(',') && str.includes('.')) str = str.replace(/\./g, '').replace(',', '.');
+            else if (str.includes(',')) str = str.replace(',', '.');
+            return parseFloat(str) || 0;
+        }
+        function getVal(row, keyPart) { return row[Object.keys(row).find(k => k.includes(keyPart))]; }
+
+        // NOVA FUNÇÃO: Busca imagem pelo código
+        function getImage(code, prodName) {
+            // 1. Tenta achar no catálogo pelo código
+            if (CATALOGO_IMAGENS[code]) {
+                return CATALOGO_IMAGENS[code];
+            }
+            // 2. Se não achar, tenta adivinhar pelo nome (Backup)
+            const name = prodName.toUpperCase();
+            if (name.includes("AZEITE")) return "https://cdn-icons-png.flaticon.com/512/2405/2405596.png";
+            if (name.includes("LEITE PO")) return "https://cdn-icons-png.flaticon.com/512/2443/2443216.png";
+            
+            // 3. Se não souber, usa padrão
+            return IMAGEM_PADRAO;
+        }
+
+        function processData(data) {
+            let latestDateObj = new Date(0);
+            let latestDateStr = "";
+            data.forEach(row => {
+                const dStr = getVal(row, 'DATA');
+                if(!dStr) return;
+                const parts = dStr.split('/');
+                const currentObj = new Date(parts[2], parts[1]-1, parts[0]);
+                if (currentObj > latestDateObj) { latestDateObj = currentObj; latestDateStr = dStr; }
+            });
+
+            if (!latestDateStr) return;
+            const filtered = data.filter(d => getVal(d, 'DATA') === latestDateStr);
+            renderSlide(filtered);
+            
+            const now = new Date();
+            document.getElementById('lastUpdate').innerText = 
+                `Dados de: ${latestDateStr} (Atualizado às ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')})`;
+            document.getElementById('loading-indicator').style.display = 'none';
+        }
+
+        function renderSlide(data) {
+            const track = document.getElementById('slideTrack');
+            const grouped = {};
+            data.forEach(d => {
+                const prod = getVal(d, 'PRODUTO') || 'Item';
+                const cod = getVal(d, 'CODIGO') || ''; // Pega o código
+                
+                if(!grouped[prod]) grouped[prod] = { prod, cod, faltaMercadoria:0, perdaQtd:0, valorPerda:0 };
+                
+                grouped[prod].faltaMercadoria += cleanNum(getVal(d, 'FALTA APOS VALIDACAO DO ESTOQUE'));
+                grouped[prod].perdaQtd += cleanNum(getVal(d, 'PERDA _AVARIA'));
+                grouped[prod].valorPerda += cleanNum(getVal(d, 'VALOR DE PERDA'));
+            });
+
+            let items = Object.values(grouped)
+                .filter(i => i.valorPerda > 0 || i.faltaMercadoria > 0 || i.perdaQtd > 0)
+                .sort((a,b) => b.valorPerda - a.valorPerda);
+
+            if (items.length === 0) {
+                track.innerHTML = '<div style="padding:100px; font-size:30px; font-weight:bold; color:#009688">✅ Nenhuma divergência hoje.</div>';
+                track.style.animation = 'none';
+                return;
+            }
+
+            const createCard = (item) => `
+                <div class="product-card">
+                    <div class="image-area">
+                        <img src="${getImage(item.cod, item.prod)}" class="product-img">
+                    </div>
+                    <div class="card-body">
+                        <div class="product-name">${item.prod}</div>
+                        <div>
+                            <span class="price-label">PERDA VALOR</span>
+                            <div class="price-display">${BRL.format(item.valorPerda)}</div>
+                        </div>
+                        <div class="stats-row">
+                            <div class="stat-item">
+                                <span class="stat-label">FALTA </span>
+                                <span class="stat-val val-falta">${item.faltaMercadoria}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">AVARIA</span>
+                                <span class="stat-val val-perda">${item.perdaQtd}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>`;
+
+            let cardsHTML = items.map(createCard).join('');
+            let cloneCount = 0;
+            while (items.length + (items.length * cloneCount) < 15) { 
+                cardsHTML += items.map(createCard).join('');
+                cloneCount++;
+                if(cloneCount > 10) break;
+            }
+
+            if (track.innerHTML !== cardsHTML) {
+                track.innerHTML = cardsHTML;
+                const totalCards = items.length * (cloneCount + 1);
+                const duration = Math.max(30, totalCards * 5); 
+                track.style.animation = `scroll ${duration}s linear infinite`;
+            }
+        }
+    </script>
+</body>
+</html>
