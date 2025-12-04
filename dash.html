@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rio Quality - Painel de Alertas</title>
+    <title>Rio Quality - RANKING TOP 12 </title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
     
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -13,44 +13,58 @@
 
     <style>
         body { font-family: 'Roboto', sans-serif; background-color: #0f172a; color: #e2e8f0; overflow: hidden; }
-        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .glow-text { text-shadow: 0 0 20px rgba(255,255,255,0.1); }
+        
+        /* Design Compacto para TV */
+        .glass-panel { background: rgba(30, 41, 59, 0.6); border: 1px solid rgba(255, 255, 255, 0.05); }
         
         /* Animação */
-        .fade-in { animation: fadeIn 0.8s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+        .fade-in { animation: fadeIn 0.6s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.99); } to { opacity: 1; transform: scale(1); } }
         
-        /* Barra de Progresso (Cor de Alerta) */
-        #progress-bar { height: 6px; background: linear-gradient(90deg, #f59e0b, #ef4444); width: 0%; position: absolute; bottom: 0; left: 0; transition: width 0.1s linear; }
+        #progress-bar { height: 4px; background: linear-gradient(90deg, #3b82f6, #8b5cf6); width: 0%; position: absolute; bottom: 0; left: 0; transition: width 0.1s linear; }
+        
+        /* Scroll Invisível */
+        .thin-scroll::-webkit-scrollbar { width: 0px; }
     </style>
 </head>
 <body class="h-screen flex flex-col">
 
-    <header class="p-6 flex justify-between items-center bg-slate-900 border-b border-slate-800 relative">
+    <header class="px-6 py-3 flex justify-between items-center bg-slate-900 border-b border-slate-800 relative z-20">
         <div class="flex items-center space-x-4">
-            <img src="https://www.rioquality.com.br/images/logo.webp" class="h-16 w-auto opacity-80">
+            <img src="https://www.rioquality.com.br/images/logo.webp" class="h-14 w-auto opacity-90">
             <div>
-                <h1 class="text-3xl font-black tracking-widest text-white uppercase">Monitoramento de Risco</h1>
-                <p class="text-sm text-red-400 uppercase tracking-widest font-bold">REGISTROS DO MÊS</p>
-                <p id="relogio" class="text-xl text-slate-400 font-mono mt-1">00:00:00</p>
+                <h1 class="text-2xl font-black tracking-wide text-white uppercase">Rio Quality - RANKING TOP 12</h1>
+                <p id="titulo-cargo" class="text-blue-400 text-sm font-bold tracking-widest uppercase">COMPARATIVO: MOTORISTAS</p>
             </div>
         </div>
         <div class="text-right">
-            <h2 id="titulo-slide" class="text-4xl font-bold text-white glow-text">CARREGANDO...</h2>
-            <p id="subtitulo-slide" class="text-slate-500 text-sm">Atualização automática</p>
+            <p id="relogio" class="text-2xl text-white font-mono font-bold">00:00</p>
         </div>
         <div id="progress-bar"></div>
     </header>
 
-    <main class="flex-1 p-8 flex flex-col justify-center">
-        <div id="container-dados" class="grid grid-cols-1 gap-6 fade-in">
+    <main class="flex-1 p-4 grid grid-cols-2 gap-4 overflow-hidden relative">
+        
+        <div class="flex flex-col h-full bg-slate-800/40 rounded-xl border border-slate-700/50 overflow-hidden">
+            <div class="p-2 bg-slate-800/80 border-b border-slate-700 text-center">
+                <h2 id="lbl-anterior" class="text-lg font-bold text-slate-400 uppercase tracking-wider">MÊS PASSADO</h2>
             </div>
-    </main>
+            <div id="lista-anterior" class="flex-1 p-2 space-y-1.5 overflow-y-auto thin-scroll fade-in"></div>
+        </div>
 
-    <footer class="p-4 bg-slate-900 border-t border-slate-800 flex justify-around text-center text-xl font-bold">
-        <div class="text-red-500">TOTAL FALTAS: <span id="footer-falta" class="text-white">0</span></div>
-        <div class="text-blue-500">TOTAL SOBRAS: <span id="footer-sobra" class="text-white">0</span></div>
-    </footer>
+        <div class="flex flex-col h-full bg-slate-800/40 rounded-xl border border-slate-700/50 overflow-hidden relative">
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-green-400 to-blue-500"></div>
+            <div class="p-2 bg-slate-800/80 border-b border-slate-700 text-center">
+                <h2 id="lbl-atual" class="text-lg font-bold text-white uppercase tracking-wider glow-text">MÊS ATUAL</h2>
+            </div>
+            <div id="lista-atual" class="flex-1 p-2 space-y-1.5 overflow-y-auto thin-scroll fade-in"></div>
+        </div>
+
+        <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-slate-900 border border-slate-600 rounded-full p-2 shadow-xl z-10">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+        </div>
+
+    </main>
 
     <script>
         // ============================================================
@@ -68,16 +82,15 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        const TEMPO_SLIDE = 10000; // 10 segundos
-        const TEMPO_UPDATE = 300000; // 5 minutos
+        const TEMPO_SLIDE = 15000; // 15 segundos por tela
+        const TEMPO_UPDATE = 604800000; // 7 dias (7 * 24 * 60 * 60 * 1000)
         
-        let dadosEquipes = [];
-        let dadosVeiculos = [];
-        let dadosProdutos = []; 
-        let slideAtual = 0; 
+        let dadosAnterior = [];
+        let dadosAtual = [];
+        let slideAtual = 0; // 0 = Motoristas, 1 = Ajudantes
         let startTime = Date.now();
 
-        setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString(); }, 1000);
+        setInterval(() => { document.getElementById('relogio').innerText = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }, 1000);
         
         setInterval(() => {
             const elapsed = Date.now() - startTime;
@@ -85,155 +98,167 @@
             document.getElementById('progress-bar').style.width = pct + '%';
         }, 100);
 
-        buscarDados();
-        setInterval(buscarDados, TEMPO_UPDATE);
-        setInterval(proximoSlide, TEMPO_SLIDE);
+        init();
+
+        function init() {
+            buscarDados();
+            setInterval(buscarDados, TEMPO_UPDATE);
+            setInterval(alternarCargo, TEMPO_SLIDE);
+        }
 
         async function buscarDados() {
             const hoje = new Date();
-            const passado = new Date();
-            passado.setDate(hoje.getDate() - 30); // Últimos 30 dias
+            
+            // Datas Mês Atual
+            const inicioAtual = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+            
+            // Datas Mês Anterior (Dia 1 até o ultimo dia)
+            const inicioAnterior = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+            const fimAnterior = new Date(hoje.getFullYear(), hoje.getMonth(), 0, 23, 59, 59);
+
+            // Atualiza nomes dos meses na tela
+            document.getElementById('lbl-atual').innerText = inicioAtual.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
+            document.getElementById('lbl-anterior').innerText = inicioAnterior.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).toUpperCase();
 
             try {
-                const snapshot = await db.collection("checklists")
-                    .where('createdAt', '>=', passado)
-                    .get();
+                // Busca Paralela
+                const [snapAnterior, snapAtual] = await Promise.all([
+                    db.collection("checklists").where('createdAt', '>=', inicioAnterior).where('createdAt', '<=', fimAnterior).get(),
+                    db.collection("checklists").where('createdAt', '>=', inicioAtual).get()
+                ]);
 
-                const dados = snapshot.docs.map(doc => doc.data());
-                processarDados(dados);
+                const rawAnterior = snapAnterior.docs.map(d => d.data());
+                const rawAtual = snapAtual.docs.map(d => d.data());
+
+                dadosAnterior = processarStats(rawAnterior);
+                dadosAtual = processarStats(rawAtual);
+
+                renderizarTela();
+
             } catch (error) {
-                console.error("Erro na TV:", error);
+                console.error("Erro:", error);
             }
         }
 
-        function processarDados(dados) {
-            const equipes = {};
-            const veiculos = {};
-            const produtos = {};
-            let totalFalta = 0, totalSobra = 0;
+        function norm(nome) {
+            if(!nome || nome === 'N/A' || nome.trim() === '') return null;
+            return nome.trim().toUpperCase();
+        }
 
-            dados.forEach(item => {
-                const listaFaltas = item.secao2?.divergencia_falta || [];
-                const teveFalta = listaFaltas.length > 0;
+        function processarStats(listaChecklists) {
+            const stats = {}; 
+
+            listaChecklists.forEach(item => {
+                const mot = norm(item.secao3?.motorista);
+                const aju1 = norm(item.secao3?.ajudante1);
+                const aju2 = norm(item.secao3?.ajudante2);
+
+                if (!mot) return;
+
+                const teveFalta = (item.secao2?.divergencia_falta || []).length > 0;
                 const teveSobra = (item.secao2?.sobras || []).length > 0;
+                const teveComp = item.secao1?.comportamento === 'Sim';
+                const isPerfect = !teveFalta && !teveSobra && !teveComp;
 
-                // === EQUIPE ===
-                const mot = item.secao3?.motorista || '';
-                if (mot && mot !== 'N/A' && mot.trim() !== '') {
-                    const aju1 = item.secao3?.ajudante1 || '';
-                    const aju2 = item.secao3?.ajudante2 || '';
-                    
-                    let teamKey = mot.split(' ')[0];
-                    if(aju1 && aju1 !== 'N/A') teamKey += '+' + aju1.split(' ')[0];
-                    if(aju2 && aju2 !== 'N/A') teamKey += '+' + aju2.split(' ')[0];
+                const computar = (nome, cargo) => {
+                    if (!nome) return;
+                    if (!stats[nome]) stats[nome] = { nome, cargo, viagens: 0, perfeitas: 0 };
+                    stats[nome].viagens++;
+                    if (isPerfect) stats[nome].perfeitas++;
+                    if (cargo === 'MOT') stats[nome].cargo = 'MOT';
+                };
 
-                    let htmlNome = `<span class="inline-block text-[10px] font-bold bg-blue-600 text-white px-2 py-1 rounded mr-2 align-middle tracking-wider">MOT</span>${mot.split(' ')[0]}`;
-                    if(aju1 && aju1 !== 'N/A') htmlNome += ` <span class="text-slate-500 text-sm mx-2">+</span> <span class="inline-block text-[10px] font-bold bg-purple-600 text-white px-2 py-1 rounded mr-2 align-middle tracking-wider">AJU</span>${aju1.split(' ')[0]}`;
-                    if(aju2 && aju2 !== 'N/A') htmlNome += ` <span class="text-slate-500 text-sm mx-2">+</span> <span class="inline-block text-[10px] font-bold bg-purple-600 text-white px-2 py-1 rounded mr-2 align-middle tracking-wider">AJU</span>${aju2.split(' ')[0]}`;
-
-                    if(!equipes[teamKey]) equipes[teamKey] = { nomeHtml: htmlNome, viagens: 0, faltas: 0 };
-                    equipes[teamKey].viagens++;
-                    if(teveFalta) equipes[teamKey].faltas++;
-                }
-
-                // === VEÍCULOS ===
-                const placa = item.secao1?.veiculo || 'N/A';
-                if (placa !== 'N/A' && placa.trim() !== '') {
-                    if(!veiculos[placa]) veiculos[placa] = { placa: placa, viagens: 0, faltas: 0 };
-                    veiculos[placa].viagens++;
-                    if(teveFalta) veiculos[placa].faltas++;
-                }
-
-                // === PRODUTOS ===
-                if (teveFalta) {
-                    totalFalta++;
-                    listaFaltas.forEach(f => {
-                        let nomeProd = f.descricao || f.produto || 'Produto s/ Nome';
-                        if(f.produto && f.descricao) nomeProd = `[${f.produto}] ${f.descricao}`;
-                        if(!produtos[nomeProd]) produtos[nomeProd] = { nome: nomeProd, qtd: 0 };
-                        produtos[nomeProd].qtd += parseInt(f.qtd || 1);
-                    });
-                }
-
-                if(teveSobra) totalSobra++;
+                computar(mot, 'MOT');
+                computar(aju1, 'AJU');
+                computar(aju2, 'AJU');
             });
 
-            document.getElementById('footer-falta').innerText = totalFalta;
-            document.getElementById('footer-sobra').innerText = totalSobra;
-
-            dadosEquipes = Object.values(equipes);
-            dadosVeiculos = Object.values(veiculos);
-            dadosProdutos = Object.values(produtos);
-            
-            renderizarSlide();
+            return Object.values(stats).sort((a, b) => {
+                const pctA = a.perfeitas / a.viagens;
+                const pctB = b.perfeitas / b.viagens;
+                if (Math.abs(pctB - pctA) > 0.001) return pctB - pctA; 
+                return b.viagens - a.viagens; 
+            });
         }
 
-        function proximoSlide() {
-            slideAtual++;
-            if(slideAtual > 2) slideAtual = 0; // Apenas 3 slides de alerta (0, 1, 2)
+        function alternarCargo() {
+            slideAtual = slideAtual === 0 ? 1 : 0;
             startTime = Date.now();
-            renderizarSlide();
+            renderizarTela();
         }
 
-        function renderizarSlide() {
-            const container = document.getElementById('container-dados');
-            const titulo = document.getElementById('titulo-slide');
-            const sub = document.getElementById('subtitulo-slide');
-            container.innerHTML = '';
+        function renderizarTela() {
+            const containerAnt = document.getElementById('lista-anterior');
+            const containerAtu = document.getElementById('lista-atual');
+            const titulo = document.getElementById('titulo-cargo');
             
-            container.classList.remove('fade-in');
-            void container.offsetWidth; 
-            container.classList.add('fade-in');
+            // Configurações do Slide
+            const cargo = slideAtual === 0 ? 'MOT' : 'AJU';
+            const nomeCargo = slideAtual === 0 ? 'MOTORISTAS' : 'AJUDANTES';
+            const corTexto = slideAtual === 0 ? 'text-blue-400' : 'text-purple-400';
+            
+            titulo.innerText = `COMPARATIVO: ${nomeCargo}`;
+            titulo.className = `${corTexto} text-sm font-bold tracking-widest uppercase mt-0.5`;
+            document.getElementById('progress-bar').className = slideAtual === 0 ? 'bg-blue-500' : 'bg-purple-500';
 
-            // === SLIDE 0: EQUIPES COM FALTA (Laranja) ===
-            if (slideAtual === 0) {
-                 titulo.className = "text-4xl font-bold text-orange-400 glow-text";
-                 titulo.innerText = "⚠️ EQUIPES COM MAIS FALTAS";
-                 sub.innerText = "Registros no sistema";
-                 const alertas = dadosEquipes.filter(e => e.faltas > 0).sort((a,b) => b.faltas - a.faltas).slice(0, 5);
-                 
-                 if (alertas.length === 0) { container.innerHTML = '<h3 class="text-center text-green-500 text-2xl mt-10">Nenhuma falta de equipe registrada!</h3>'; return; }
+            // Filtra TOP 12 para caber na tela sem rolar (Compacto)
+            const listaAnt = dadosAnterior.filter(p => p.cargo === cargo && p.viagens >= 3).slice(0, 12);
+            const listaAtu = dadosAtual.filter(p => p.cargo === cargo && p.viagens >= 3).slice(0, 12);
 
-                 alertas.forEach((e, i) => {
-                    container.innerHTML += `
-                        <div class="glass-panel p-5 rounded-2xl flex items-center justify-between border-l-8 border-orange-500">
-                            <div class="flex items-center w-3/4">
-                                <span class="text-5xl font-black text-slate-600 mr-6">${i+1}</span>
-                                <div>
-                                    <h3 class="text-2xl font-bold text-slate-200 flex flex-wrap items-center">${e.nomeHtml}</h3>
-                                    <p class="text-orange-400 text-lg mt-1">${e.viagens} viagens no total</p>
+            containerAnt.innerHTML = '';
+            containerAtu.innerHTML = '';
+            
+            // Animação
+            containerAnt.classList.remove('fade-in'); containerAtu.classList.remove('fade-in');
+            void containerAnt.offsetWidth; 
+            containerAnt.classList.add('fade-in'); containerAtu.classList.add('fade-in');
+
+            renderizarLista(containerAnt, listaAnt, false);
+            renderizarLista(containerAtu, listaAtu, true);
+        }
+
+        function renderizarLista(container, lista, isAtual) {
+            if (lista.length === 0) {
+                container.innerHTML = '<div class="text-center mt-20 text-slate-600 text-sm">Sem dados.</div>';
+                return;
+            }
+
+            lista.forEach((p, i) => {
+                const rank = i + 1;
+                const pct = Math.round((p.perfeitas / p.viagens) * 100);
+                
+                // Cores Compactas
+                let barColor = 'bg-slate-600';
+                let pctColor = 'text-slate-400';
+                if (pct === 100) { barColor = 'bg-green-500'; pctColor = 'text-green-400'; }
+                else if (pct >= 90) { barColor = 'bg-green-600'; pctColor = 'text-green-200'; }
+                else if (pct < 60) { barColor = 'bg-red-500'; pctColor = 'text-red-400'; }
+
+                // Se for o mês atual, destaca levemente
+                const bgCard = isAtual ? 'bg-slate-700/40' : 'bg-slate-800/40';
+
+                container.innerHTML += `
+                    <div class="${bgCard} px-3 py-2 rounded-lg flex items-center justify-between border-b border-slate-700/50">
+                        <div class="flex items-center min-w-0 w-3/4">
+                            <span class="text-sm font-bold text-slate-500 w-6 text-center mr-2">#${rank}</span>
+                            <div class="min-w-0 flex-1">
+                                <div class="flex justify-between items-baseline pr-2">
+                                    <h3 class="text-sm font-bold text-slate-200 truncate" title="${p.nome}">${p.nome}</h3>
+                                </div>
+                                <div class="flex items-center mt-1">
+                                    <div class="w-16 bg-slate-900 rounded-full h-1.5 mr-2 overflow-hidden">
+                                        <div class="${barColor} h-1.5 rounded-full" style="width: ${pct}%"></div>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400 font-mono">${p.perfeitas}/${p.viagens} OK</span>
                                 </div>
                             </div>
-                            <div class="text-right"><span class="text-4xl font-black text-white">${e.faltas}</span><span class="block text-xs text-slate-400 uppercase">Ocorrências</span></div>
-                        </div>`;
-                 });
-
-            // === SLIDE 1: VEÍCULOS (Azul) ===
-            } else if (slideAtual === 1) {
-                 titulo.className = "text-4xl font-bold text-blue-400 glow-text";
-                 titulo.innerText = "🔧 VEÍCULOS COM MAIS FALTAS";
-                 sub.innerText = "Faltas registradas";
-                 const veicAlertas = dadosVeiculos.filter(v => v.faltas > 0).sort((a,b) => b.faltas - a.faltas).slice(0, 5);
-                 
-                 if (veicAlertas.length === 0) { container.innerHTML = '<h3 class="text-center text-green-500 text-2xl mt-10">Frota operando 100% (Sem faltas).</h3>'; return; }
-                 
-                 veicAlertas.forEach((v, i) => {
-                    container.innerHTML += `<div class="glass-panel p-5 rounded-2xl flex items-center justify-between border-l-8 border-blue-500"><div class="flex items-center"><span class="text-5xl font-black text-slate-600 mr-6">${i+1}</span><div><h3 class="text-3xl font-bold text-white">${v.placa}</h3><p class="text-blue-400 text-lg">Faltas registradas neste carro</p></div></div><div class="text-right"><span class="text-4xl font-black text-red-400">${v.faltas}</span><span class="block text-xs text-slate-400 uppercase">Cargas c/ Problema</span></div></div>`;
-                 });
-
-            // === SLIDE 2: PRODUTOS (Roxo) ===
-            } else {
-                 titulo.className = "text-4xl font-bold text-purple-400 glow-text";
-                 titulo.innerText = "📦 PRODUTOS COM MAIS FALTA";
-                 sub.innerText = "Faltas registradas";
-                 const prodAlertas = dadosProdutos.sort((a,b) => b.qtd - a.qtd).slice(0, 5);
-                 
-                 if (prodAlertas.length === 0) { container.innerHTML = '<h3 class="text-center text-green-500 text-2xl mt-10">Nenhum produto com falta!</h3>'; return; }
-                 
-                 prodAlertas.forEach((p, i) => {
-                    container.innerHTML += `<div class="glass-panel p-5 rounded-2xl flex items-center justify-between border-l-8 border-purple-500"><div class="flex items-center overflow-hidden"><span class="text-5xl font-black text-slate-600 mr-6 flex-shrink-0">#${i+1}</span><div class="min-w-0"><h3 class="text-2xl font-bold text-white truncate pr-4">${p.nome}</h3><p class="text-purple-400 text-lg">Item crítico do período</p></div></div><div class="text-right flex-shrink-0"><span class="text-4xl font-black text-red-400">${p.qtd}</span><span class="block text-xs text-slate-400 uppercase">Unidades Registradas</span></div></div>`;
-                 });
-            }
+                        </div>
+                        <div class="text-right pl-1">
+                            <span class="text-xl font-black ${pctColor}">${pct}%</span>
+                        </div>
+                    </div>
+                `;
+            });
         }
     </script>
 </body>
