@@ -2345,36 +2345,19 @@ async function carregarFrotaPorData() {
 
     document.addEventListener('contextmenu', event => event.preventDefault());
 
-    // 2. Bloqueia Atalhos de Teclado
     document.onkeydown = function(e) {
+        
+        // Bloqueia F12
+        if(e.keyCode == 123) return false;
 
-        // F12 (DevTools)
-        if(e.keyCode == 123) {
-            return false;
-        }
+        // Bloqueia Ctrl+U (Código Fonte)
+        if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) return false;
 
-        // Ctrl + U (Ver Fonte)
-        if(e.ctrlKey && e.keyCode == 'U'.charCodeAt(0)) {
-            return false;
-        }
-
-        // Ctrl + Shift + I (DevTools)
-        if(e.ctrlKey && e.shiftKey && e.keyCode == 'I'.charCodeAt(0)) {
-            return false;
-        }
-
-        // Ctrl + Shift + J (Console)
-        if(e.ctrlKey && e.shiftKey && e.keyCode == 'J'.charCodeAt(0)) {
-            return false;
-        }
-
-        // Ctrl + Shift + C (Inspecionar)
-        if(e.ctrlKey && e.shiftKey && e.keyCode == 'C'.charCodeAt(0)) {
-            return false;
-        }
-
-        // Ctrl + S (Salvar Página)
-        if(e.ctrlKey && e.keyCode == 'S'.charCodeAt(0)) {
+        // Bloqueia Ctrl+Shift+I/J/C (Ferramentas Dev)
+        if(e.ctrlKey && e.shiftKey && 
+          (e.keyCode == 'I'.charCodeAt(0) || 
+           e.keyCode == 'J'.charCodeAt(0) || 
+           e.keyCode == 'C'.charCodeAt(0))) {
             return false;
         }
     }
