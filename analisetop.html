@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANÁLISE RETORNO</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; height: 100vh; overflow: hidden; }
+        .sidebar-item { cursor: pointer; border-left: 4px solid transparent; transition: all 0.2s; }
+        .sidebar-item:hover { background-color: #f1f5f9; }
+        .sidebar-item.active { background-color: #e0f2fe; border-left-color: #0284c7; color: #0369a1; }
+        
+        /* Cards Clicáveis */
+        .partner-card { cursor: pointer; transition: transform 0.1s, box-shadow 0.1s; }
+        .partner-card:hover { transform: scale(1.02); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .partner-card:active { transform: scale(0.98); }
+
+        .bad-partner { background-color: #fef2f2; color: #991b1b; border: 1px solid #fecaca; }
+        .good-partner { background-color: #f0fdf4; color: #166534; border: 1px solid #bbf7d0; }
+
+        /* Scroll fino */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #e2e8f0; }
+        ::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 3px; }
+    </style>
+</head>
+<body class="flex">
+
+    <aside class="w-80 bg-white border-r border-slate-200 flex flex-col h-full shadow-lg z-10">
+        <div class="p-5 border-b border-slate-200 bg-slate-50">
+            <h1 class="text-xl font-black text-slate-800 uppercase tracking-tighter">Análise de incidência</h1>
+            <p class="text-xs text-slate-500 mb-3">Selecione para ver o dossiê</p>
+            <input type="text" id="search-input" placeholder="Buscar nome..." onkeyup="filtrarLista()" class="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+        </div>
+        
+        <div id="lista-colaboradores" class="flex-1 overflow-y-auto">
+            <div class="p-10 text-center text-slate-400 text-sm">Carregando...</div>
+        </div>
+    </aside>
+
+    <main class="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 relative">
+        
+        <header id="header-profile" class="bg-white border-b border-slate-200 p-6 flex justify-between items-center hidden">
+            <div>
+                <div class="flex items-center gap-3">
+                    <h2 id="nome-colaborador" class="text-3xl font-black text-slate-800">NOME</h2>
+                    <span id="cargo-colaborador" class="bg-slate-100 text-slate-600 px-2 py-1 rounded text-xs font-bold uppercase">CARGO</span>
+                </div>
+                <div class="flex gap-6 mt-2 text-sm text-slate-500">
+                    <span>Total de Viagens: <strong id="total-viagens" class="text-slate-800">0</strong></span>
+                    <span>Incidência Geral: <strong id="incidencia-geral" class="text-slate-800">0%</strong></span>
+                </div>
+            </div>
+            <div class="text-right">
+                <input type="date" id="data-inicio" onchange="recalcularDados()" class="border p-1 rounded text-xs bg-slate-50">
+                <span class="text-xs text-slate-400">até</span>
+                <input type="date" id="data-fim" onchange="recalcularDados()" class="border p-1 rounded text-xs bg-slate-50">
+            </div>
+        </header>
+
+        <div id="content-profile" class="flex-1 overflow-y-auto p-6 space-y-6 hidden">
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">📅 Evolução Mensal</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left">
+                        <thead class="text-xs text-slate-500 bg-slate-50 uppercase">
+                            <tr>
+                                <th class="px-4 py-2">Mês</th>
+                                <th class="px-4 py-2 text-center">Viagens</th>
+                                <th class="px-4 py-2 text-center text-red-600">Faltas</th>
+                                <th class="px-4 py-2 text-center text-orange-600">Sobras</th>
+                                <th class="px-4 py-2 text-center">Incidência</th>
+                                <th class="px-4 py-2 w-1/3">Visual</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabela-mensal" class="divide-y divide-slate-100"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-slate-400 uppercase tracking-widest">🤝 Performance por Parceiro (Clique para Detalhes)</h3>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <h4 class="text-xs font-bold text-red-600 mb-2 uppercase">🔴 Piores Combinações</h4>
+                        <div id="lista-parceiros-ruins" class="space-y-2"></div>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold text-green-600 mb-2 uppercase">🟢 Melhores Combinações</h4>
+                        <div id="lista-parceiros-bons" class="space-y-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="empty-state" class="flex-1 flex flex-col justify-center items-center text-slate-300">
+            <svg class="h-24 w-24 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" /></svg>
+            <p class="text-lg font-medium">Selecione um colaborador ao lado</p>
+        </div>
+
+    </main>
+
+    <div id="modal-produtos" class="fixed inset-0 bg-black bg-opacity-70 hidden z-50 flex justify-center items-center p-4 backdrop-blur-sm">
+        <div class="bg-white w-full max-w-4xl max-h-[85vh] rounded-xl shadow-2xl flex flex-col animate-bounce-in">
+            <div class="p-5 border-b border-gray-200 bg-slate-50 rounded-t-xl flex justify-between items-center">
+                <div>
+                    <span class="text-xs font-bold text-blue-600 uppercase tracking-wider">Histórico de Problemas Conjuntos</span>
+                    <h2 class="text-lg font-black text-gray-800 mt-1">
+                        <span id="modal-colab1" class="text-slate-600"></span> 
+                        <span class="mx-2 text-slate-300">e</span> 
+                        <span id="modal-colab2" class="text-blue-600"></span>
+                    </h2>
+                </div>
+                <button onclick="fecharModal()" class="text-gray-400 hover:text-red-600 text-3xl leading-none">&times;</button>
+            </div>
+            
+            <div class="flex-1 overflow-y-auto p-0">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-gray-100 text-gray-500 uppercase text-xs sticky top-0">
+                        <tr>
+                            <th class="px-6 py-3">Data / Veículo</th>
+                            <th class="px-6 py-3 text-center w-24">Tipo</th>
+                            <th class="px-6 py-3">Produto / Divergência</th>
+                            <th class="px-6 py-3 text-center w-20">Qtd</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-produtos-detalhe" class="divide-y divide-gray-100 text-slate-700">
+                        </tbody>
+                </table>
+            </div>
+            
+            <div class="p-4 border-t border-gray-200 bg-gray-50 rounded-b-xl text-right">
+                <button onclick="fecharModal()" class="bg-slate-800 text-white px-6 py-2 rounded-lg text-sm font-bold hover:bg-slate-900 transition">Fechar Detalhes</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+        apiKey: "AIzaSyC7Wx_vjoeu_AM9XutwCenbnsBfkRnPDOs",
+        authDomain: "checklist-logistica-app.firebaseapp.com",
+        projectId: "checklist-logistica-app",
+        storageBucket: "checklist-logistica-app.appspot.com",
+        messagingSenderId: "1016366468474",
+        appId: "1:1016366468474:web:ae176857dd3d884027dac3"
+    };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        let dadosGlobais = [];
+        let usuarioSelecionado = null;
+
+        const hoje = new Date();
+        const passado = new Date();
+        passado.setDate(hoje.getDate() - 15);
+        document.getElementById('data-fim').value = hoje.toISOString().split('T')[0];
+        document.getElementById('data-inicio').value = passado.toISOString().split('T')[0];
+
+        buscarDadosGerais();
+
+        function norm(nome) {
+            if(!nome || nome === 'N/A' || nome.trim() === '') return null;
+            return nome.trim().toUpperCase();
+        }
+
+        async function buscarDadosGerais() {
+            let inicio = document.getElementById('data-inicio').value;
+            let fim = document.getElementById('data-fim').value;
+            const dInicio = new Date(inicio + 'T00:00:00');
+            const dFim = new Date(fim + 'T23:59:59.999');
+
+            try {
+                const snapshot = await db.collection("checklists")
+                    .where('createdAt', '>=', firebase.firestore.Timestamp.fromDate(dInicio))
+                    .where('createdAt', '<=', firebase.firestore.Timestamp.fromDate(dFim))
+                    .get();
+
+                dadosGlobais = snapshot.docs.map(doc => doc.data());
+                renderizarSidebar();
+                if(usuarioSelecionado) selecionarPessoa(usuarioSelecionado);
+
+            } catch (error) { console.error(error); }
+        }
+
+        function recalcularDados() { buscarDadosGerais(); }
+
+        function renderizarSidebar() {
+            const lista = {};
+            dadosGlobais.forEach(item => {
+                const nomes = [
+                    {n: norm(item.secao3?.motorista), c: 'Motorista'}, 
+                    {n: norm(item.secao3?.ajudante1), c: 'Ajudante'}, 
+                    {n: norm(item.secao3?.ajudante2), c: 'Ajudante'}
+                ];
+                nomes.forEach(p => {
+                    if(p.n) {
+                        if(!lista[p.n]) lista[p.n] = { nome: p.n, cargo: p.c, viagens: 0 };
+                        lista[p.n].viagens++;
+                    }
+                });
+            });
+
+            const arrayOrdenado = Object.values(lista).sort((a,b) => b.viagens - a.viagens);
+            const container = document.getElementById('lista-colaboradores');
+            container.innerHTML = '';
+
+            arrayOrdenado.forEach(p => {
+                const div = document.createElement('div');
+                div.className = `sidebar-item p-3 border-b border-slate-100 flex justify-between items-center ${usuarioSelecionado === p.nome ? 'active' : ''}`;
+                div.onclick = () => selecionarPessoa(p.nome);
+                div.innerHTML = `
+                    <div><div class="text-xs font-bold uppercase text-slate-400">${p.cargo}</div><div class="font-bold text-sm text-slate-700 nome-texto">${p.nome}</div></div>
+                    <div class="text-xs bg-slate-100 px-2 py-1 rounded text-slate-500 font-mono">${p.viagens}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function filtrarLista() {
+            const termo = document.getElementById('search-input').value.toUpperCase();
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                const nome = item.querySelector('.nome-texto').innerText;
+                item.style.display = nome.includes(termo) ? 'flex' : 'none';
+            });
+        }
+
+        function selecionarPessoa(nome) {
+            usuarioSelecionado = nome;
+            renderizarSidebar();
+            document.getElementById('empty-state').classList.add('hidden');
+            document.getElementById('header-profile').classList.remove('hidden');
+            document.getElementById('content-profile').classList.remove('hidden');
+            document.getElementById('nome-colaborador').innerText = nome;
+            processarDossie(nome);
+        }
+
+        function processarDossie(nomeAlvo) {
+            let totalViagens = 0; let totalProblemas = 0;
+            const statsMensais = {}; const statsParceiros = {}; 
+            let cargoDetectado = 'Desconhecido';
+
+            dadosGlobais.forEach(item => {
+                const mot = norm(item.secao3?.motorista);
+                const aju1 = norm(item.secao3?.ajudante1);
+                const aju2 = norm(item.secao3?.ajudante2);
+                const equipe = [mot, aju1, aju2];
+
+                if (!equipe.includes(nomeAlvo)) return;
+
+                if(mot === nomeAlvo) cargoDetectado = 'Motorista';
+                else if(equipe.includes(nomeAlvo)) cargoDetectado = 'Ajudante';
+
+                const qtdFaltas = (item.secao2?.divergencia_falta || []).length;
+                const qtdSobras = (item.secao2?.sobras || []).length;
+                const temProblema = qtdFaltas > 0 || qtdSobras > 0;
+
+                totalViagens++;
+                if(temProblema) totalProblemas++;
+
+                const data = item.createdAt.toDate();
+                const mesAno = `${(data.getMonth()+1).toString().padStart(2,'0')}/${data.getFullYear()}`;
+                
+                if(!statsMensais[mesAno]) statsMensais[mesAno] = { viagens: 0, faltas: 0, sobras: 0 };
+                statsMensais[mesAno].viagens++;
+                if(qtdFaltas > 0) statsMensais[mesAno].faltas++;
+                if(qtdSobras > 0) statsMensais[mesAno].sobras++;
+
+                equipe.forEach(parceiro => {
+                    if(parceiro && parceiro !== nomeAlvo) {
+                        let cargoParceiro = parceiro === mot ? 'MOT' : 'AJU';
+                        if(!statsParceiros[parceiro]) statsParceiros[parceiro] = { viagens: 0, problemas: 0, cargo: cargoParceiro, cntFaltas: 0, cntSobras: 0 };
+                        statsParceiros[parceiro].viagens++;
+                        if(temProblema) statsParceiros[parceiro].problemas++;
+                        if(qtdFaltas > 0) statsParceiros[parceiro].cntFaltas++;
+                        if(qtdSobras > 0) statsParceiros[parceiro].cntSobras++;
+                    }
+                });
+            });
+
+            document.getElementById('cargo-colaborador').innerText = cargoDetectado;
+            document.getElementById('total-viagens').innerText = totalViagens;
+            const incidencia = totalViagens > 0 ? (totalProblemas / totalViagens) * 100 : 0;
+            const elInc = document.getElementById('incidencia-geral');
+            elInc.innerText = incidencia.toFixed(1) + '%';
+            elInc.className = incidencia > 10 ? 'text-red-600 font-bold' : (incidencia > 5 ? 'text-orange-500 font-bold' : 'text-green-600 font-bold');
+
+            // Render Tabela Mensal
+            const tbodyMensal = document.getElementById('tabela-mensal');
+            tbodyMensal.innerHTML = '';
+            Object.keys(statsMensais).sort((a,b) => {
+                const [ma, ya] = a.split('/'); const [mb, yb] = b.split('/');
+                return new Date(ya, ma-1) - new Date(yb, mb-1);
+            }).forEach(mes => {
+                const d = statsMensais[mes];
+                const pct = d.viagens > 0 ? ((d.faltas + d.sobras) / d.viagens) * 100 : 0;
+                let corBarra = pct > 10 ? 'bg-red-500' : (pct > 5 ? 'bg-orange-400' : 'bg-green-500');
+                tbodyMensal.innerHTML += `<tr class="hover:bg-slate-50"><td class="px-4 py-3 font-bold text-slate-600">${mes}</td><td class="px-4 py-3 text-center text-slate-700">${d.viagens}</td><td class="px-4 py-3 text-center font-bold text-red-600 bg-red-50">${d.faltas}</td><td class="px-4 py-3 text-center font-bold text-orange-600 bg-orange-50">${d.sobras}</td><td class="px-4 py-3 text-center font-bold text-slate-800">${pct.toFixed(1)}%</td><td class="px-4 py-3 align-middle"><div class="w-full bg-slate-200 rounded-full h-2"><div class="${corBarra} h-2 rounded-full" style="width: ${Math.min(pct, 100)}%"></div></div></td></tr>`;
+            });
+
+            // Render Parceiros
+            const renderCard = (p, tipo) => {
+                const tag = p.cargo === 'MOT' ? '<span class="text-[10px] bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded border border-blue-200 ml-2">MOT</span>' : '<span class="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded border border-orange-200 ml-2">AJU</span>';
+                const styleClass = tipo === 'bad' ? 'bad-partner' : 'good-partner';
+                return `
+                    <div onclick="abrirModalProdutos('${p.nome}')" class="partner-card flex flex-col p-3 rounded-lg ${styleClass} mb-2 relative group">
+                        <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 text-xs font-bold text-blue-600 flex items-center bg-white px-2 py-1 rounded shadow">🔍 Ver Itens</div>
+                        <div class="flex justify-between items-center mb-1">
+                            <div class="flex items-center"><span class="truncate max-w-[150px] text-xs font-bold" title="${p.nome}">${p.nome}</span>${tag}</div>
+                            <div class="text-right"><span class="block text-sm font-black">${p.pct.toFixed(0)}% Erro</span></div>
+                        </div>
+                        <div class="flex justify-between items-center text-[10px] opacity-80 pt-1 mt-1 border-t border-black/5">
+                            <span>${p.viagens} viagens</span>
+                            <span class="font-bold">Falta: ${p.cntFaltas} | Sobra: ${p.cntSobras}</span>
+                        </div>
+                    </div>
+                `;
+            };
+
+            const listaP = Object.entries(statsParceiros).map(([n, d]) => ({nome: n, ...d, pct: (d.problemas/d.viagens)*100})).filter(p => p.viagens >= 2);
+            const ruins = listaP.filter(p => p.pct > incidencia).sort((a,b) => b.pct - a.pct).slice(0, 5);
+            const bons = listaP.filter(p => p.pct <= incidencia).sort((a,b) => b.viagens - a.viagens).slice(0, 5);
+
+            document.getElementById('lista-parceiros-ruins').innerHTML = ruins.length ? ruins.map(p => renderCard(p, 'bad')).join('') : '<span class="text-xs text-slate-400">Nenhum destaque negativo.</span>';
+            document.getElementById('lista-parceiros-bons').innerHTML = bons.length ? bons.map(p => renderCard(p, 'good')).join('') : '<span class="text-xs text-slate-400">Sem dados suficientes.</span>';
+        }
+
+        // ============================================
+        // LÓGICA DO MODAL DE PRODUTOS (A MÁGICA)
+        // ============================================
+        function abrirModalProdutos(nomeParceiro) {
+            const modal = document.getElementById('modal-produtos');
+            const tbody = document.getElementById('lista-produtos-detalhe');
+            const nomeAlvo = usuarioSelecionado;
+
+            // Preenche Header do Modal
+            document.getElementById('modal-colab1').innerText = nomeAlvo;
+            document.getElementById('modal-colab2').innerText = nomeParceiro;
+            tbody.innerHTML = '';
+
+            let encontrouAlgo = false;
+
+            // Varre o histórico buscando viagens ONDE OS DOIS ESTAVAM JUNTOS
+            dadosGlobais.forEach(item => {
+                const equipe = [
+                    norm(item.secao3?.motorista), 
+                    norm(item.secao3?.ajudante1), 
+                    norm(item.secao3?.ajudante2)
+                ];
+
+                // Só processa se AMBOS estiverem na equipe
+                if(equipe.includes(nomeAlvo) && equipe.includes(nomeParceiro)) {
+                    
+                    const faltas = item.secao2?.divergencia_falta || [];
+                    const sobras = item.secao2?.sobras || [];
+                    
+                    // Se tiver problema nesta carga, lista os produtos
+                    if(faltas.length > 0 || sobras.length > 0) {
+                        encontrouAlgo = true;
+                        
+                        // Extrai dados da Carga
+                        const data = item.createdAt ? new Date(item.createdAt.toDate()).toLocaleDateString('pt-BR') : 'N/A';
+                        const veiculo = item.secao1?.veiculo || 'N/D';
+                        const numeroCarga = item.secao1?.carga || 'S/N'; // <--- PEGA O NÚMERO DA CARGA
+
+                        // Renderiza Faltas
+                        faltas.forEach(p => {
+                            const codigo = p.produto || 'S/COD';
+                            const descricao = p.descricao || ''; // Tenta pegar descrição separada se houver
+                            
+                            tbody.innerHTML += `
+                                <tr class="hover:bg-red-50 border-b border-gray-100">
+                                    <td class="px-6 py-3 text-xs text-gray-500 font-mono">
+                                        ${data}<br>
+                                        <span class="font-bold text-gray-700">${veiculo}</span><br>
+                                        <span class="text-blue-600 font-bold">Carga: ${numeroCarga}</span>
+                                    </td>
+                                    <td class="px-6 py-3 text-center align-middle">
+                                        <span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold border border-red-200">FALTA</span>
+                                    </td>
+                                    <td class="px-6 py-3 font-medium text-gray-800 align-middle">
+                                        <div class="font-black text-slate-700">${codigo}</div>
+                                        <div class="text-xs text-slate-500 uppercase">${descricao}</div>
+                                    </td>
+                                    <td class="px-6 py-3 text-center font-bold text-gray-600 align-middle">${p.qtd}</td>
+                                </tr>
+                            `;
+                        });
+
+                        // Renderiza Sobras
+                        sobras.forEach(p => {
+                            const codigo = p.produto || 'S/COD';
+                            const descricao = p.descricao || ''; 
+
+                            tbody.innerHTML += `
+                                <tr class="hover:bg-orange-50 border-b border-gray-100">
+                                    <td class="px-6 py-3 text-xs text-gray-500 font-mono">
+                                        ${data}<br>
+                                        <span class="font-bold text-gray-700">${veiculo}</span><br>
+                                        <span class="text-blue-600 font-bold">Carga: ${numeroCarga}</span>
+                                    </td>
+                                    <td class="px-6 py-3 text-center align-middle">
+                                        <span class="bg-orange-100 text-orange-700 px-2 py-1 rounded text-xs font-bold border border-orange-200">SOBRA</span>
+                                    </td>
+                                    <td class="px-6 py-3 font-medium text-gray-800 align-middle">
+                                        <div class="font-black text-slate-700">${codigo}</div>
+                                        <div class="text-xs text-slate-500 uppercase">${descricao}</div>
+                                    </td>
+                                    <td class="px-6 py-3 text-center font-bold text-gray-600 align-middle">${p.qtd}</td>
+                                </tr>
+                            `;
+                        });
+                    }
+                }
+            });
+
+            if(!encontrouAlgo) {
+                tbody.innerHTML = '<tr><td colspan="4" class="p-8 text-center text-gray-400">Nenhum produto registrado nas divergências dessas viagens.</td></tr>';
+            }
+
+            modal.classList.remove('hidden');
+        }
+
+        function fecharModal() {
+            document.getElementById('modal-produtos').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>
